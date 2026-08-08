@@ -14,7 +14,7 @@ public class SwaggerConfig {
         return new OpenAPI()
                 .info(new Info()
                         .title("Ecommerce API")
-                        .description("REST API for a ecommerce marketplace — catalog, users and orders.")
+                        .description("REST API for a ecommerce marketplace — products and categories.")
                         .version("v1.0.0"));
     }
 }

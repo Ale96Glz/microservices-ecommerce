@@ -21,14 +21,17 @@ public class ProductoMapper {
     }
 
     public ProductoResponseDTO toResponseDto(Producto producto) {
+        String estado = producto.getEstado() != null ? producto.getEstado().name() : null;
+        String categoria = producto.getCategoria() != null ? producto.getCategoria().getNombre() : null;
+
         return new ProductoResponseDTO(
                 producto.getId(),
                 producto.getNombre(),
                 producto.getDescripcion(),
                 producto.getPrecio(),
                 producto.getStock(),
-                producto.getEstado().name(),
-                producto.getCategoria().getNombre(),
+                estado,
+                categoria,
                 producto.getFechaCreacion()
         );
     }

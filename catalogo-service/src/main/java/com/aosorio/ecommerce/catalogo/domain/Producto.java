@@ -39,7 +39,7 @@ public class Producto {
     @Min(0)
     private int stock;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "categoria_id", nullable = false)
     private Categoria categoria;
 

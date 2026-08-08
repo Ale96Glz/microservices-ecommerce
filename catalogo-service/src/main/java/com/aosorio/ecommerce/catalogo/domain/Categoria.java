@@ -1,9 +1,11 @@
 package com.aosorio.ecommerce.catalogo.domain;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -25,6 +27,8 @@ public class Categoria {
     @Column(length = 100, columnDefinition = "TEXT")
     private String descripcion;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "categoria")
-    private List<Producto> productos;
+    @Builder.Default
+    private List<Producto> productos = new ArrayList<>();
 }
