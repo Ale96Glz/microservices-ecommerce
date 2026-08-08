@@ -3,8 +3,11 @@ package com.aosorio.ecommerce.catalogo.service;
 import com.aosorio.ecommerce.catalogo.domain.Categoria;
 import com.aosorio.ecommerce.catalogo.dto.CategoriaRequestDTO;
 import com.aosorio.ecommerce.catalogo.dto.CategoriaResponseDTO;
+import com.aosorio.ecommerce.catalogo.exception.ResourceInUseException;
+import com.aosorio.ecommerce.catalogo.exception.ResourceNotFoundException;
 import com.aosorio.ecommerce.catalogo.mapper.CategoriaMapper;
 import com.aosorio.ecommerce.catalogo.repository.CategoriaRepository;
+import com.aosorio.ecommerce.catalogo.repository.ProductoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +19,7 @@ import java.util.List;
 public class CategoriaServiceImpl implements CategoriaService {
 
     private final CategoriaRepository categoriaRepository;
+    private final ProductoRepository productoRepository;
     private final CategoriaMapper categoriaMapper;
 
     @Override
@@ -29,7 +33,7 @@ public class CategoriaServiceImpl implements CategoriaService {
     @Transactional
     public CategoriaResponseDTO actualizar(Long id, CategoriaRequestDTO categoriaRequestDTO) {
         Categoria categoria = categoriaRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("No se encontró la categoria con id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró la categoria con id: " + id));
         categoria.setNombre(categoriaRequestDTO.getNombre());
         categoria.setDescripcion(categoriaRequestDTO.getDescripcion());
         return categoriaMapper.toResponseDto(categoriaRepository.save(categoria));
@@ -39,8 +43,17 @@ public class CategoriaServiceImpl implements CategoriaService {
     @Transactional
     public void eliminar(Long id) {
         if (!categoriaRepository.existsById(id)) {
-            throw new RuntimeException("No se encontró la categoria con id: " + id);
+            throw new ResourceNotFoundException("No se encontró la categoria con id: " + id);
         }
+
+        long productosAsociados = productoRepository.countByCategoriaId(id);
+        if (productosAsociados > 0) {
+            throw new ResourceInUseException(
+                    "No se puede eliminar la categoria con id " + id
+                            + ": tiene " + productosAsociados + " producto(s) asociados. "
+                            + "Reasigna o elimina esos productos antes de continuar.");
+        }
+
         categoriaRepository.deleteById(id);
     }
 
@@ -49,7 +62,7 @@ public class CategoriaServiceImpl implements CategoriaService {
     public CategoriaResponseDTO obtenerPorId(Long id) {
         return categoriaRepository.findById(id)
                 .map(categoriaMapper::toResponseDto)
-                .orElseThrow(() -> new RuntimeException("No se encontró la categoria con id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró la categoria con id: " + id));
     }
 
     @Override

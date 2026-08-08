@@ -1,6 +1,5 @@
 package com.aosorio.ecommerce.catalogo.controller;
 
-import com.aosorio.ecommerce.catalogo.domain.Categoria;
 import com.aosorio.ecommerce.catalogo.dto.CategoriaRequestDTO;
 import com.aosorio.ecommerce.catalogo.dto.CategoriaResponseDTO;
 import com.aosorio.ecommerce.catalogo.service.CategoriaService;
