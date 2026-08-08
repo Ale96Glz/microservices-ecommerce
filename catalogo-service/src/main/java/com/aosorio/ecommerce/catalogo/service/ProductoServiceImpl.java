@@ -1,9 +1,11 @@
 package com.aosorio.ecommerce.catalogo.service;
 
+import com.aosorio.ecommerce.catalogo.domain.Categoria;
 import com.aosorio.ecommerce.catalogo.domain.Producto;
 import com.aosorio.ecommerce.catalogo.dto.ProductoRequestDTO;
 import com.aosorio.ecommerce.catalogo.dto.ProductoResponseDTO;
 import com.aosorio.ecommerce.catalogo.mapper.ProductoMapper;
+import com.aosorio.ecommerce.catalogo.repository.CategoriaRepository;
 import com.aosorio.ecommerce.catalogo.repository.ProductoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +19,9 @@ import java.util.List;
 @Slf4j
 public class ProductoServiceImpl implements ProductoService {
     private final ProductoRepository productoRepository;
+    private final CategoriaRepository categoriaRepository;
     private final ProductoMapper productoMapper;
+
     @Override
     @Transactional
     public ProductoResponseDTO crear(ProductoRequestDTO productoRequestDTO) {
@@ -27,7 +31,11 @@ public class ProductoServiceImpl implements ProductoService {
             throw new RuntimeException("Ya existe un producto con el nombre: " + productoRequestDTO.getNombre());
         }
 
-        Producto producto = productoMapper.toRespondeEntity(productoRequestDTO);
+        Categoria categoria = categoriaRepository.findById(productoRequestDTO.getCategoriaId())
+                .orElseThrow(() -> new RuntimeException(
+                        "No existe la categoria con id: " + productoRequestDTO.getCategoriaId()));
+
+        Producto producto = productoMapper.toEntity(productoRequestDTO, categoria);
         Producto guardado = productoRepository.save(producto);
         log.info("Se ha guardado el producto: {}", guardado.getId());
 

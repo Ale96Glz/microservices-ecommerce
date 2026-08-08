@@ -28,7 +28,5 @@ public class ProductoRequestDTO {
     private int stock;
 
     @NotNull(message = "La categoria es obligatoria")
-    private String categoria;
-
-
+    private Long categoriaId;
 }

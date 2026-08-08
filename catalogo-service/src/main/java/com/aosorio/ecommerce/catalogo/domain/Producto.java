@@ -14,7 +14,10 @@ import org.hibernate.annotations.UpdateTimestamp;
 @AllArgsConstructor
 @Builder
 @Table(
-        name = "producto"
+        name = "producto",
+        uniqueConstraints = {
+        @UniqueConstraint(columnNames = "nombre")
+        }
 )
 public class Producto {
 
@@ -36,8 +39,9 @@ public class Producto {
     @Min(0)
     private int stock;
 
-    @Column(nullable = false)
-    private String categoria;
+    @ManyToOne
+    @JoinColumn(name = "categoria_id", nullable = false)
+    private Categoria categoria;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
