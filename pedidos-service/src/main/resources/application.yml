@@ -4,4 +4,36 @@ server:
 spring:
   application:
     name: pedidos-service
-  # TODO: datasource, jpa, flyway, kafka, catalogo client
+  datasource:
+    url: jdbc:h2:mem:pedidos_db;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    open-in-view: false
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+
+catalogo:
+  service:
+    url: ${CATALOGO_SERVICE_URL:http://localhost:8082}
+
+pedidos:
+  kafka:
+    enabled: false
+
+springdoc:
+  default-flat-param-object: true

@@ -1,5 +1,12 @@
 package com.aosorio.ecommerce.events;
 
-// TODO: definir campos del evento
-public class OrderCreatedEvent {
+import java.math.BigDecimal;
+import java.time.Instant;
+
+public record OrderCreatedEvent(
+        Long pedidoId,
+        Long usuarioId,
+        BigDecimal total,
+        Instant creadoEn
+) {
 }
