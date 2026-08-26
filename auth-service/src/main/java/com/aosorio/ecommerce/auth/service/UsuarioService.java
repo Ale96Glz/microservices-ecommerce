@@ -10,6 +10,8 @@ import java.util.List;
 public interface UsuarioService {
     UsuarioResponseDTO actualizar(Long id, UsuarioRequestDTO request);
 
+    UsuarioResponseDTO actualizarRol(Long id, String rol);
+
     void eliminar(Long id);
 
     UsuarioResponseDTO obtenerPorId(Long id);

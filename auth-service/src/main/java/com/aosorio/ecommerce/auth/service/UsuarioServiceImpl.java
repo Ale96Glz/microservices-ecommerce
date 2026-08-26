@@ -43,6 +43,23 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Override
     @Transactional
+    public UsuarioResponseDTO actualizarRol(Long id, String rol) {
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el usuario con id: " + id));
+
+        try {
+            usuario.setRol(Usuario.RolUsuario.valueOf(rol.trim().toUpperCase()));
+        } catch (IllegalArgumentException ex) {
+            throw new ResourceInUseException("Rol inválido: " + rol);
+        }
+
+        Usuario actualizado = usuarioRepository.save(usuario);
+        log.info("Se ha actualizado el rol del usuario {} a {}", actualizado.getId(), actualizado.getRol());
+        return usuarioMapper.toResponseDto(actualizado);
+    }
+
+    @Override
+    @Transactional
     public void eliminar(Long id) {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró el usuario con id: " + id));
