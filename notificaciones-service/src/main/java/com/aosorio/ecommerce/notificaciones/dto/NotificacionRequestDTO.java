@@ -15,9 +15,6 @@ import lombok.Setter;
 @AllArgsConstructor
 public class NotificacionRequestDTO {
 
-    @NotNull(message = "El usuario es obligatorio")
-    private Long usuarioId;
-
     @NotBlank(message = "El tipo es obligatorio")
     private String tipo;
 

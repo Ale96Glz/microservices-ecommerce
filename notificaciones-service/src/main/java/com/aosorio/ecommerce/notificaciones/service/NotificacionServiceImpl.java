@@ -28,7 +28,7 @@ public class NotificacionServiceImpl implements NotificacionService {
 
     @Override
     @Transactional
-    public NotificacionResponseDTO crear(NotificacionRequestDTO request) {
+    public NotificacionResponseDTO crear(Long usuarioId, NotificacionRequestDTO request) {
         Notificacion.TipoNotificacion tipo;
         try {
             tipo = Notificacion.TipoNotificacion.valueOf(request.getTipo().trim().toUpperCase());
@@ -36,7 +36,7 @@ public class NotificacionServiceImpl implements NotificacionService {
             throw new InvalidRequestException("Tipo de notificación inválido: " + request.getTipo());
         }
 
-        return guardar(request.getUsuarioId(), tipo, request.getMensaje(), request.getReferenciaId());
+        return guardar(usuarioId, tipo, request.getMensaje(), request.getReferenciaId());
     }
 
     @Override

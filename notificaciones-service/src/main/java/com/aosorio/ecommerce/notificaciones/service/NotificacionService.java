@@ -10,7 +10,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 
 public interface NotificacionService {
-    NotificacionResponseDTO crear(NotificacionRequestDTO request);
+    NotificacionResponseDTO crear(Long usuarioId, NotificacionRequestDTO request);
 
     NotificacionResponseDTO registrarPedidoCreado(OrderCreatedEvent event);
 
