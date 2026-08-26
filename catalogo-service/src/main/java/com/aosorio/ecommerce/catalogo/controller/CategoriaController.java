@@ -2,7 +2,9 @@ package com.aosorio.ecommerce.catalogo.controller;
 
 import com.aosorio.ecommerce.catalogo.dto.CategoriaRequestDTO;
 import com.aosorio.ecommerce.catalogo.dto.CategoriaResponseDTO;
+import com.aosorio.ecommerce.catalogo.security.GatewayAuth;
 import com.aosorio.ecommerce.catalogo.service.CategoriaService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,10 +23,10 @@ public class CategoriaController {
 
     @PostMapping
     public ResponseEntity<CategoriaResponseDTO> save(
-           @Valid @RequestBody CategoriaRequestDTO categoriaDTO) {
-
+            @Valid @RequestBody CategoriaRequestDTO categoriaDTO,
+            HttpServletRequest request) {
+        GatewayAuth.requireAdmin(request);
         CategoriaResponseDTO creado = categoriaService.crear(categoriaDTO);
-
         return ResponseEntity.status(HttpStatus.CREATED).body(creado);
     }
 
@@ -33,20 +35,19 @@ public class CategoriaController {
         return ResponseEntity.ok(categoriaService.obtenerTodos());
     }
 
-
     @PutMapping("/{id}")
     public ResponseEntity<CategoriaResponseDTO> update(
             @PathVariable Long id,
-            @Valid @RequestBody CategoriaRequestDTO categoriaDTO)
-    {
+            @Valid @RequestBody CategoriaRequestDTO categoriaDTO,
+            HttpServletRequest request) {
+        GatewayAuth.requireAdmin(request);
         CategoriaResponseDTO actualizado = categoriaService.actualizar(id, categoriaDTO);
         return ResponseEntity.ok(actualizado);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(
-            @PathVariable Long id
-    ){
+    public ResponseEntity<Void> delete(@PathVariable Long id, HttpServletRequest request) {
+        GatewayAuth.requireAdmin(request);
         categoriaService.eliminar(id);
         return ResponseEntity.noContent().build();
     }

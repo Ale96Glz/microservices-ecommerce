@@ -3,7 +3,9 @@ package com.aosorio.ecommerce.catalogo.controller;
 import com.aosorio.ecommerce.catalogo.dto.PageResponseDTO;
 import com.aosorio.ecommerce.catalogo.dto.ProductoRequestDTO;
 import com.aosorio.ecommerce.catalogo.dto.ProductoResponseDTO;
+import com.aosorio.ecommerce.catalogo.security.GatewayAuth;
 import com.aosorio.ecommerce.catalogo.service.ProductoService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +34,9 @@ public class ProductoController {
 
     @PostMapping
     public ResponseEntity<ProductoResponseDTO> save(
-            @Valid @RequestBody ProductoRequestDTO productoRequestDTO) {
+            @Valid @RequestBody ProductoRequestDTO productoRequestDTO,
+            HttpServletRequest request) {
+        GatewayAuth.requireAdmin(request);
         ProductoResponseDTO creado = productoService.crear(productoRequestDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(creado);
     }
@@ -56,7 +60,8 @@ public class ProductoController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteById(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteById(@PathVariable Long id, HttpServletRequest request) {
+        GatewayAuth.requireAdmin(request);
         productoService.eliminar(id);
         return ResponseEntity.noContent().build();
     }
@@ -64,7 +69,9 @@ public class ProductoController {
     @PutMapping("/{id}")
     public ResponseEntity<ProductoResponseDTO> updateById(
             @PathVariable Long id,
-            @Valid @RequestBody ProductoRequestDTO productoRequestDTO) {
+            @Valid @RequestBody ProductoRequestDTO productoRequestDTO,
+            HttpServletRequest request) {
+        GatewayAuth.requireAdmin(request);
         return ResponseEntity.ok(productoService.actualizar(id, productoRequestDTO));
     }
 }
