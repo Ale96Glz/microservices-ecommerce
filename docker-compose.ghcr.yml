@@ -1,0 +1,24 @@
+# Override para usar imágenes de GHCR (sin rebuild local).
+# Uso:
+#   set IMAGE_TAG=v1.0.0
+#   docker compose -f docker-compose.yml -f docker-compose.ghcr.yml pull
+#   docker compose -f docker-compose.yml -f docker-compose.ghcr.yml up -d --no-build
+
+services:
+  auth-service:
+    image: ghcr.io/ale96glz/ecommerce-microservices/auth-service:${IMAGE_TAG:-latest}
+
+  catalogo-service:
+    image: ghcr.io/ale96glz/ecommerce-microservices/catalogo-service:${IMAGE_TAG:-latest}
+
+  pedidos-service:
+    image: ghcr.io/ale96glz/ecommerce-microservices/pedidos-service:${IMAGE_TAG:-latest}
+
+  pagos-service:
+    image: ghcr.io/ale96glz/ecommerce-microservices/pagos-service:${IMAGE_TAG:-latest}
+
+  notificaciones-service:
+    image: ghcr.io/ale96glz/ecommerce-microservices/notificaciones-service:${IMAGE_TAG:-latest}
+
+  api-gateway:
+    image: ghcr.io/ale96glz/ecommerce-microservices/api-gateway:${IMAGE_TAG:-latest}
