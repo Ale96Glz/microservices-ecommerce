@@ -33,6 +33,11 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
             "/api/v1/auth/login"
     );
 
+    private static final List<String> PUBLIC_GET_PREFIXES = List.of(
+            "/api/v1/producto",
+            "/api/v1/categoria"
+    );
+
     private final JwtValidator jwtValidator;
 
     public JwtAuthGlobalFilter(JwtValidator jwtValidator) {
@@ -44,7 +49,7 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getURI().getPath();
 
-        if (HttpMethod.OPTIONS.equals(request.getMethod()) || isPublic(path)) {
+        if (HttpMethod.OPTIONS.equals(request.getMethod()) || isPublic(request.getMethod(), path)) {
             return chain.filter(exchange);
         }
 
@@ -82,8 +87,15 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
         return value != null ? value.toString() : "";
     }
 
-    private boolean isPublic(String path) {
-        return PUBLIC_PATHS.stream().anyMatch(path::equals);
+    private boolean isPublic(HttpMethod method, String path) {
+        if (PUBLIC_PATHS.stream().anyMatch(path::equals)) {
+            return true;
+        }
+        if (HttpMethod.GET.equals(method)) {
+            return PUBLIC_GET_PREFIXES.stream().anyMatch(prefix ->
+                    path.equals(prefix) || path.startsWith(prefix + "/"));
+        }
+        return false;
     }
 
     private Mono<Void> unauthorized(ServerWebExchange exchange, String message) {
