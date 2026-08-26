@@ -5,10 +5,10 @@ spring:
   application:
     name: pedidos-service
   datasource:
-    url: jdbc:h2:mem:pedidos_db;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:pedidos_db;DB_CLOSE_DELAY=-1;MODE=PostgreSQL}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:org.h2.Driver}
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
   h2:
     console:
       enabled: true
@@ -33,7 +33,7 @@ catalogo:
 
 pedidos:
   kafka:
-    enabled: false
+    enabled: ${PEDIDOS_KAFKA_ENABLED:false}
 
 springdoc:
   default-flat-param-object: true

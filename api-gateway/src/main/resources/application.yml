@@ -46,4 +46,4 @@ jwt:
 
 gateway:
   security:
-    enabled: true
+    enabled: ${GATEWAY_SECURITY_ENABLED:true}
