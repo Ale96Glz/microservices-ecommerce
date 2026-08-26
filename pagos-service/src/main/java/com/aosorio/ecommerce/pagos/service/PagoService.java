@@ -9,7 +9,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 
 public interface PagoService {
-    PagoResponseDTO procesar(PagoRequestDTO request);
+    PagoResponseDTO procesar(Long usuarioId, PagoRequestDTO request);
 
     PagoResponseDTO procesarDesdeEvento(OrderCreatedEvent event);
 

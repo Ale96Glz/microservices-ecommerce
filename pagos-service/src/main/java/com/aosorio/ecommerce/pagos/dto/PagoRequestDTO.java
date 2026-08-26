@@ -20,9 +20,6 @@ public class PagoRequestDTO {
     @NotNull(message = "El pedido es obligatorio")
     private Long pedidoId;
 
-    @NotNull(message = "El usuario es obligatorio")
-    private Long usuarioId;
-
     @NotNull(message = "El monto es obligatorio")
     @DecimalMin(value = "0.01", message = "El monto debe ser mayor a 0")
     private BigDecimal monto;

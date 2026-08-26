@@ -32,8 +32,8 @@ public class PagoServiceImpl implements PagoService {
 
     @Override
     @Transactional
-    public PagoResponseDTO procesar(PagoRequestDTO request) {
-        return guardarPago(request.getPedidoId(), request.getUsuarioId(), request.getMonto());
+    public PagoResponseDTO procesar(Long usuarioId, PagoRequestDTO request) {
+        return guardarPago(request.getPedidoId(), usuarioId, request.getMonto());
     }
 
     @Override
