@@ -3,7 +3,9 @@ package com.aosorio.ecommerce.pedidos.controller;
 import com.aosorio.ecommerce.pedidos.dto.PageResponseDTO;
 import com.aosorio.ecommerce.pedidos.dto.PedidoRequestDTO;
 import com.aosorio.ecommerce.pedidos.dto.PedidoResponseDTO;
+import com.aosorio.ecommerce.pedidos.security.GatewayAuth;
 import com.aosorio.ecommerce.pedidos.service.PedidoService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,36 +34,57 @@ public class PedidoController {
 
     @PostMapping
     public ResponseEntity<PedidoResponseDTO> save(
-            @Valid @RequestBody PedidoRequestDTO pedidoRequestDTO) {
-        PedidoResponseDTO creado = pedidoService.crear(pedidoRequestDTO);
+            @Valid @RequestBody PedidoRequestDTO pedidoRequestDTO,
+            HttpServletRequest request) {
+        GatewayAuth.User user = GatewayAuth.requireUser(request);
+        PedidoResponseDTO creado = pedidoService.crear(user.id(), pedidoRequestDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(creado);
     }
 
     @GetMapping
-    public ResponseEntity<List<PedidoResponseDTO>> getAll() {
+    public ResponseEntity<List<PedidoResponseDTO>> getAll(HttpServletRequest request) {
+        GatewayAuth.requireAdmin(request);
         return ResponseEntity.ok(pedidoService.obtenerTodos());
     }
 
     @GetMapping("/pageable")
     public ResponseEntity<PageResponseDTO<PedidoResponseDTO>> getPageable(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            HttpServletRequest request) {
+        GatewayAuth.requireAdmin(request);
         var pageable = PageRequest.of(page, size, Sort.by("id").ascending());
         return ResponseEntity.ok(pedidoService.obtenerTodosPaginado(pageable));
     }
 
     @GetMapping("/usuario/{usuarioId}")
-    public ResponseEntity<List<PedidoResponseDTO>> getByUsuario(@PathVariable Long usuarioId) {
+    public ResponseEntity<List<PedidoResponseDTO>> getByUsuario(
+            @PathVariable Long usuarioId,
+            HttpServletRequest request) {
+        GatewayAuth.User user = GatewayAuth.requireUser(request);
+        GatewayAuth.requireSelfOrAdmin(user, usuarioId);
         return ResponseEntity.ok(pedidoService.obtenerPorUsuario(usuarioId));
     }
 
+    @GetMapping("/mios")
+    public ResponseEntity<List<PedidoResponseDTO>> getMine(HttpServletRequest request) {
+        GatewayAuth.User user = GatewayAuth.requireUser(request);
+        return ResponseEntity.ok(pedidoService.obtenerPorUsuario(user.id()));
+    }
+
     @GetMapping("/{id}")
-    public ResponseEntity<PedidoResponseDTO> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(pedidoService.obtenerPorId(id));
+    public ResponseEntity<PedidoResponseDTO> getById(@PathVariable Long id, HttpServletRequest request) {
+        GatewayAuth.User user = GatewayAuth.requireUser(request);
+        PedidoResponseDTO pedido = pedidoService.obtenerPorId(id);
+        GatewayAuth.requireSelfOrAdmin(user, pedido.usuarioId());
+        return ResponseEntity.ok(pedido);
     }
 
     @PutMapping("/{id}/cancelar")
-    public ResponseEntity<PedidoResponseDTO> cancelar(@PathVariable Long id) {
+    public ResponseEntity<PedidoResponseDTO> cancelar(@PathVariable Long id, HttpServletRequest request) {
+        GatewayAuth.User user = GatewayAuth.requireUser(request);
+        PedidoResponseDTO pedido = pedidoService.obtenerPorId(id);
+        GatewayAuth.requireSelfOrAdmin(user, pedido.usuarioId());
         return ResponseEntity.ok(pedidoService.cancelar(id));
     }
 }

@@ -8,7 +8,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 
 public interface PedidoService {
-    PedidoResponseDTO crear(PedidoRequestDTO pedidoRequestDTO);
+    PedidoResponseDTO crear(Long usuarioId, PedidoRequestDTO pedidoRequestDTO);
 
     PedidoResponseDTO cancelar(Long id);
 

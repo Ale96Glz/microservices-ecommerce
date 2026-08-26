@@ -36,11 +36,11 @@ public class PedidoServiceImpl implements PedidoService {
 
     @Override
     @Transactional
-    public PedidoResponseDTO crear(PedidoRequestDTO pedidoRequestDTO) {
-        log.info("Iniciando la creacion del pedido para usuario: {}", pedidoRequestDTO.getUsuarioId());
+    public PedidoResponseDTO crear(Long usuarioId, PedidoRequestDTO pedidoRequestDTO) {
+        log.info("Iniciando la creacion del pedido para usuario: {}", usuarioId);
 
         Pedido pedido = Pedido.builder()
-                .usuarioId(pedidoRequestDTO.getUsuarioId())
+                .usuarioId(usuarioId)
                 .estado(Pedido.EstadoPedido.CREADO)
                 .total(BigDecimal.ZERO)
                 .build();
