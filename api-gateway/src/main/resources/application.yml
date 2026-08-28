@@ -47,3 +47,14 @@ jwt:
 gateway:
   security:
     enabled: ${GATEWAY_SECURITY_ENABLED:true}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never

@@ -36,6 +36,7 @@ catálogo, pedidos, pagos y notificaciones mediante APIs REST.
 - H2 para ejecución local.
 - PostgreSQL para ejecución con Docker.
 - Kafka para la comunicación entre pedidos, pagos y notificaciones.
+- Health checks compatibles con Kubernetes.
 
 ## Arquitectura de eventos
 
@@ -152,6 +153,19 @@ Por ejemplo:
 ```text
 http://localhost:8082/swagger-ui.html
 ```
+
+## Health checks
+
+Cada servicio expone endpoints de salud para el orquestador:
+
+```text
+http://localhost:<puerto>/actuator/health
+http://localhost:<puerto>/actuator/health/liveness
+http://localhost:<puerto>/actuator/health/readiness
+```
+
+Estos endpoints serán utilizados más adelante por las `readinessProbe` y
+`livenessProbe` de Kubernetes.
 
 ## Hoja de ruta
 

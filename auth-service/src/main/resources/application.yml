@@ -25,3 +25,14 @@ jwt:
 
 springdoc:
   default-flat-param-object: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
