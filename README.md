@@ -120,6 +120,37 @@ docker compose -f docker-compose.yml -f docker-compose.ghcr.yml pull
 docker compose -f docker-compose.yml -f docker-compose.ghcr.yml up -d --no-build
 ```
 
+## Despliegue inicial en Kubernetes
+
+El script interactivo multiplataforma `scripts/deploy-k8s.ps1` aplica la
+infraestructura por etapas y solicita las credenciales sin mostrarlas en
+pantalla. Requiere PowerShell 5.1 en Windows o PowerShell 7 en Linux/macOS.
+
+En Windows:
+
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass
+.\scripts\deploy-k8s.ps1
+```
+
+En Linux o macOS:
+
+```bash
+pwsh -File ./scripts/deploy-k8s.ps1
+```
+
+Actualmente ejecuta:
+
+1. Validación del contexto y los nodos.
+2. Creación del namespace `ecommerce`.
+3. Aplicación del `ConfigMap`.
+4. Creación del `Secret` si todavía no existe.
+5. Despliegue de PostgreSQL y su volumen persistente.
+6. Verificación de las cinco bases de datos.
+
+Si `ecommerce-secrets` ya existe, el script lo conserva para no cambiar
+accidentalmente la contraseña de una base de datos existente.
+
 ## Autenticación y flujo básico
 
 1. Registrar un usuario en `POST /api/v1/auth/register`.
