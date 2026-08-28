@@ -4,3 +4,7 @@ namespace: ecommerce
 resources:
   - namespace.yaml
   - configmap.yaml
+  - postgres-init-configmap.yaml
+  - postgres-pvc.yaml
+  - postgres-service.yaml
+  - postgres-statefulset.yaml

@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+  namespace: ecommerce
+data:
+  init-dbs.sql: |
+    CREATE DATABASE auth_db;
+    CREATE DATABASE catalogo_db;
+    CREATE DATABASE pedidos_db;
+    CREATE DATABASE pagos_db;
+    CREATE DATABASE notificaciones_db;
