@@ -8,3 +8,5 @@ resources:
   - postgres-pvc.yaml
   - postgres-service.yaml
   - postgres-statefulset.yaml
+  - catalogo-deployment.yaml
+  - catalogo-service.yaml
