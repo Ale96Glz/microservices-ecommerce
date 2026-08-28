@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ecommerce-config
+  namespace: ecommerce
+data:
+  AUTH_SERVICE_URL: http://auth-service:8081
+  CATALOGO_SERVICE_URL: http://catalogo-service:8082
+  PEDIDOS_SERVICE_URL: http://pedidos-service:8083
+  PAGOS_SERVICE_URL: http://pagos-service:8084
+  NOTIFICACIONES_SERVICE_URL: http://notificaciones-service:8085
+  SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+  PEDIDOS_KAFKA_ENABLED: "true"
+  PAGOS_KAFKA_ENABLED: "true"
+  NOTIFICACIONES_KAFKA_ENABLED: "true"
+  GATEWAY_SECURITY_ENABLED: "true"

@@ -177,8 +177,9 @@ Estos endpoints serán utilizados más adelante por las `readinessProbe` y
 - [x] Preparar Dockerfiles y Docker Compose.
 - [x] Integrar PostgreSQL, Kafka y Kafka UI para ejecución con Docker.
 - [x] Automatizar compilación y publicación de imágenes en GHCR.
-- [ ] Agregar manifiestos Kubernetes.
-- [ ] Configurar Secrets, ConfigMaps, Services e Ingress.
+- [x] Crear la base de Kubernetes: namespace, ConfigMap y plantilla de Secret.
+- [ ] Agregar manifiestos para PostgreSQL, Kafka y los microservicios.
+- [ ] Configurar Secrets, Services e Ingress.
 - [ ] Agregar health checks y observabilidad.
 
 ### Fase 2 — Robustez del negocio

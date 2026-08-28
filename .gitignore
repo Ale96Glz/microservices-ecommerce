@@ -28,6 +28,8 @@ Desktop.ini
 
 # Env / secrets
 .env
+k8s/secret.yaml
+k8s/*-secret.yaml
 *.pem
 *.p12
 *.jks
