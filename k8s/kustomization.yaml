@@ -10,3 +10,5 @@ resources:
   - postgres-statefulset.yaml
   - catalogo-deployment.yaml
   - catalogo-service.yaml
+  - auth-deployment.yaml
+  - auth-service.yaml
