@@ -209,7 +209,7 @@ Estos endpoints serán utilizados más adelante por las `readinessProbe` y
 - [x] Integrar PostgreSQL, Kafka y Kafka UI para ejecución con Docker.
 - [x] Automatizar compilación y publicación de imágenes en GHCR.
 - [x] Crear la base de Kubernetes: namespace, ConfigMap y plantilla de Secret.
-- [ ] Agregar manifiestos para PostgreSQL, Kafka y los microservicios.
+- [x] Agregar manifiestos para PostgreSQL, Kafka y los microservicios.
 - [ ] Configurar Secrets, Services e Ingress.
 - [ ] Agregar health checks y observabilidad.
 

@@ -8,6 +8,8 @@ resources:
   - postgres-pvc.yaml
   - postgres-service.yaml
   - postgres-statefulset.yaml
+  - kafka-service.yaml
+  - kafka-statefulset.yaml
   - catalogo-deployment.yaml
   - catalogo-service.yaml
   - auth-deployment.yaml
