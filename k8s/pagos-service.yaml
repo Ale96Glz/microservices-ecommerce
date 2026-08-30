@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: pagos-service
+  namespace: ecommerce
+  labels:
+    app.kubernetes.io/name: pagos-service
+    app.kubernetes.io/part-of: ecommerce-microservices
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: pagos-service
+  ports:
+    - name: http
+      port: 8084
+      targetPort: http

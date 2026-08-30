@@ -14,3 +14,5 @@ resources:
   - auth-service.yaml
   - pedidos-deployment.yaml
   - pedidos-service.yaml
+  - pagos-deployment.yaml
+  - pagos-service.yaml
