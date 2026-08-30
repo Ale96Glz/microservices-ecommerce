@@ -18,3 +18,5 @@ resources:
   - pagos-service.yaml
   - notificaciones-deployment.yaml
   - notificaciones-service.yaml
+  - api-gateway-deployment.yaml
+  - api-gateway-service.yaml
