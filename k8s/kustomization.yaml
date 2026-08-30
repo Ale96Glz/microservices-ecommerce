@@ -16,3 +16,5 @@ resources:
   - pedidos-service.yaml
   - pagos-deployment.yaml
   - pagos-service.yaml
+  - notificaciones-deployment.yaml
+  - notificaciones-service.yaml
