@@ -6,19 +6,19 @@
 
 services:
   auth-service:
-    image: ghcr.io/ale96glz/ecommerce-microservices/auth-service:${IMAGE_TAG:-latest}
+    image: ghcr.io/ale96glz/microservices-ecommerce/auth-service:${IMAGE_TAG:-latest}
 
   catalogo-service:
-    image: ghcr.io/ale96glz/ecommerce-microservices/catalogo-service:${IMAGE_TAG:-latest}
+    image: ghcr.io/ale96glz/microservices-ecommerce/catalogo-service:${IMAGE_TAG:-latest}
 
   pedidos-service:
-    image: ghcr.io/ale96glz/ecommerce-microservices/pedidos-service:${IMAGE_TAG:-latest}
+    image: ghcr.io/ale96glz/microservices-ecommerce/pedidos-service:${IMAGE_TAG:-latest}
 
   pagos-service:
-    image: ghcr.io/ale96glz/ecommerce-microservices/pagos-service:${IMAGE_TAG:-latest}
+    image: ghcr.io/ale96glz/microservices-ecommerce/pagos-service:${IMAGE_TAG:-latest}
 
   notificaciones-service:
-    image: ghcr.io/ale96glz/ecommerce-microservices/notificaciones-service:${IMAGE_TAG:-latest}
+    image: ghcr.io/ale96glz/microservices-ecommerce/notificaciones-service:${IMAGE_TAG:-latest}
 
   api-gateway:
-    image: ghcr.io/ale96glz/ecommerce-microservices/api-gateway:${IMAGE_TAG:-latest}
+    image: ghcr.io/ale96glz/microservices-ecommerce/api-gateway:${IMAGE_TAG:-latest}

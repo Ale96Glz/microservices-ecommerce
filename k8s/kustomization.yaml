@@ -12,3 +12,5 @@ resources:
   - catalogo-service.yaml
   - auth-deployment.yaml
   - auth-service.yaml
+  - pedidos-deployment.yaml
+  - pedidos-service.yaml
