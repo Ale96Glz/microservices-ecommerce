@@ -210,8 +210,8 @@ Estos endpoints serán utilizados más adelante por las `readinessProbe` y
 - [x] Automatizar compilación y publicación de imágenes en GHCR.
 - [x] Crear la base de Kubernetes: namespace, ConfigMap y plantilla de Secret.
 - [x] Agregar manifiestos para PostgreSQL, Kafka y los microservicios.
-- [ ] Configurar Secrets, Services e Ingress.
-- [ ] Agregar health checks y observabilidad.
+- [x] Configurar Secrets, Services e Ingress.
+- [x] Agregar health checks y observabilidad (startup, readiness y liveness).
 
 ### Fase 2 — Robustez del negocio
 

@@ -22,3 +22,4 @@ resources:
   - notificaciones-service.yaml
   - api-gateway-deployment.yaml
   - api-gateway-service.yaml
+  - ingress.yaml
