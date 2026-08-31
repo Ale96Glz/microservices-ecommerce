@@ -107,6 +107,7 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       PEDIDOS_KAFKA_ENABLED: "true"
       CATALOGO_SERVICE_URL: http://catalogo-service:8082
+      AUTH_SERVICE_URL: http://auth-service:8081
 
   pagos-service:
     build:
