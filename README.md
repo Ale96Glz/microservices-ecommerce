@@ -171,6 +171,11 @@ Email: admin@ecommerce.local
 Password: Admin1234
 ```
 
+## Documentación de arquitectura
+
+El registro de decisiones (ADRs) y los diagramas C4 (Contexto, Contenedores y
+Componentes) están disponibles en [`docs/`](./docs/adr/README.md).
+
 ## Documentación de API
 
 La documentación Swagger está disponible en:
@@ -215,8 +220,8 @@ Estos endpoints serán utilizados más adelante por las `readinessProbe` y
 
 ### Fase 2 — Robustez del negocio
 
-- [ ] Implementar reserva y actualización de stock.
-- [ ] Validar la existencia y el estado del usuario desde pedidos.
+- [x] Implementar reserva y actualización de stock (descuento atómico al crear el pedido).
+- [x] Validar la existencia y el estado del usuario desde pedidos.
 - [ ] Mejorar el ciclo de estados de pedidos y pagos.
 - [ ] Agregar reintentos y manejo de errores para eventos Kafka.
 - [ ] Implementar Transactional Outbox.
