@@ -5,6 +5,8 @@ import com.aosorio.ecommerce.catalogo.domain.Producto;
 import com.aosorio.ecommerce.catalogo.dto.PageResponseDTO;
 import com.aosorio.ecommerce.catalogo.dto.ProductoRequestDTO;
 import com.aosorio.ecommerce.catalogo.dto.ProductoResponseDTO;
+import com.aosorio.ecommerce.catalogo.exception.ResourceInUseException;
+import com.aosorio.ecommerce.catalogo.exception.ResourceNotFoundException;
 import com.aosorio.ecommerce.catalogo.mapper.ProductoMapper;
 import com.aosorio.ecommerce.catalogo.repository.CategoriaRepository;
 import com.aosorio.ecommerce.catalogo.repository.ProductoRepository;
@@ -59,6 +61,9 @@ public class ProductoServiceImpl implements ProductoService {
         producto.setPrecio(productoRequestDTO.getPrecio());
         producto.setStock(productoRequestDTO.getStock());
         producto.setCategoria(categoria);
+        producto.setEstado(producto.getStock() > 0
+                ? Producto.EstadoProducto.ACTIVO
+                : Producto.EstadoProducto.AGOTADO);
 
         Producto actualizado = productoRepository.save(producto);
         log.info("Se ha actualizado el producto: {}", actualizado.getId());
@@ -73,6 +78,34 @@ public class ProductoServiceImpl implements ProductoService {
                 .orElseThrow(() -> new RuntimeException("No se encontró el producto con id: " + id));
         productoRepository.delete(producto);
         log.info("Se ha eliminado el producto: {}", producto.getId());
+    }
+
+    @Override
+    @Transactional
+    public ProductoResponseDTO descontarStock(Long id, int cantidad) {
+        log.info("Descontando {} unidades de stock del producto: {}", cantidad, id);
+
+        int actualizados = productoRepository.descontarStock(id, cantidad);
+        if (actualizados == 0) {
+            Producto actual = productoRepository.findById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("No se encontró el producto con id: " + id));
+            throw new ResourceInUseException(
+                    "Stock insuficiente para el producto " + id + ". Disponible: " + actual.getStock()
+                            + ", solicitado: " + cantidad);
+        }
+
+        Producto producto = productoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el producto con id: " + id));
+
+        if (producto.getStock() <= 0) {
+            producto.setEstado(Producto.EstadoProducto.AGOTADO);
+        } else if (producto.getEstado() == Producto.EstadoProducto.AGOTADO) {
+            producto.setEstado(Producto.EstadoProducto.ACTIVO);
+        }
+
+        Producto actualizado = productoRepository.save(producto);
+        log.info("Stock actualizado del producto {}: {} unidades", id, actualizado.getStock());
+        return productoMapper.toResponseDto(actualizado);
     }
 
     @Override

@@ -74,4 +74,13 @@ public class ProductoController {
         GatewayAuth.requireAdmin(request);
         return ResponseEntity.ok(productoService.actualizar(id, productoRequestDTO));
     }
+
+    @PutMapping("/{id}/stock")
+    public ResponseEntity<ProductoResponseDTO> descontarStock(
+            @PathVariable Long id,
+            @RequestParam int cantidad,
+            HttpServletRequest request) {
+        GatewayAuth.requireUser(request);
+        return ResponseEntity.ok(productoService.descontarStock(id, cantidad));
+    }
 }
