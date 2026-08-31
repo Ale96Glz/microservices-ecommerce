@@ -1,6 +1,7 @@
 package com.aosorio.ecommerce.pedidos.service;
 
 import com.aosorio.ecommerce.events.OrderCreatedEvent;
+import com.aosorio.ecommerce.pedidos.client.AuthClient;
 import com.aosorio.ecommerce.pedidos.client.CatalogoClient;
 import com.aosorio.ecommerce.pedidos.client.ProductoCatalogoDTO;
 import com.aosorio.ecommerce.pedidos.domain.Pedido;
@@ -31,6 +32,7 @@ public class PedidoServiceImpl implements PedidoService {
 
     private final PedidoRepository pedidoRepository;
     private final CatalogoClient catalogoClient;
+    private final AuthClient authClient;
     private final PedidoMapper pedidoMapper;
     private final OrderEventPublisher orderEventPublisher;
 
@@ -38,6 +40,8 @@ public class PedidoServiceImpl implements PedidoService {
     @Transactional
     public PedidoResponseDTO crear(Long usuarioId, PedidoRequestDTO pedidoRequestDTO) {
         log.info("Iniciando la creacion del pedido para usuario: {}", usuarioId);
+
+        authClient.validarUsuario(usuarioId);
 
         Pedido pedido = Pedido.builder()
                 .usuarioId(usuarioId)
@@ -49,6 +53,7 @@ public class PedidoServiceImpl implements PedidoService {
         for (PedidoItemRequestDTO itemRequest : pedidoRequestDTO.getItems()) {
             ProductoCatalogoDTO producto = catalogoClient.obtenerProducto(itemRequest.getProductoId());
             validarProducto(producto, itemRequest.getCantidad());
+            catalogoClient.descontarStock(usuarioId, itemRequest.getProductoId(), itemRequest.getCantidad());
 
             BigDecimal subtotal = producto.precio().multiply(BigDecimal.valueOf(itemRequest.getCantidad()));
             PedidoItem item = PedidoItem.builder()
