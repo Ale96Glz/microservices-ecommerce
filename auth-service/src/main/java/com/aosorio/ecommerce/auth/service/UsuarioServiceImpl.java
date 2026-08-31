@@ -4,6 +4,7 @@ import com.aosorio.ecommerce.auth.domain.Usuario;
 import com.aosorio.ecommerce.auth.dto.PageResponseDTO;
 import com.aosorio.ecommerce.auth.dto.UsuarioRequestDTO;
 import com.aosorio.ecommerce.auth.dto.UsuarioResponseDTO;
+import com.aosorio.ecommerce.auth.dto.UsuarioValidacionDTO;
 import com.aosorio.ecommerce.auth.exception.ResourceInUseException;
 import com.aosorio.ecommerce.auth.exception.ResourceNotFoundException;
 import com.aosorio.ecommerce.auth.mapper.UsuarioMapper;
@@ -73,6 +74,15 @@ public class UsuarioServiceImpl implements UsuarioService {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró el usuario con id: " + id));
         return usuarioMapper.toResponseDto(usuario);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UsuarioValidacionDTO validarExistencia(Long id) {
+        Usuario usuario = usuarioRepository.findById(id)
+                .filter(u -> u.getRol() != null)
+                .orElseThrow(() -> new ResourceNotFoundException("No existe un usuario válido con id: " + id));
+        return new UsuarioValidacionDTO(usuario.getId(), usuario.getRol().name());
     }
 
     @Override

@@ -3,6 +3,7 @@ package com.aosorio.ecommerce.auth.controller;
 import com.aosorio.ecommerce.auth.dto.PageResponseDTO;
 import com.aosorio.ecommerce.auth.dto.UsuarioRequestDTO;
 import com.aosorio.ecommerce.auth.dto.UsuarioResponseDTO;
+import com.aosorio.ecommerce.auth.dto.UsuarioValidacionDTO;
 import com.aosorio.ecommerce.auth.security.GatewayAuth;
 import com.aosorio.ecommerce.auth.service.UsuarioService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -52,6 +53,14 @@ public class UsuarioController {
         GatewayAuth.User user = GatewayAuth.requireUser(request);
         GatewayAuth.requireSelfOrAdmin(user, id);
         return ResponseEntity.ok(usuarioService.obtenerPorId(id));
+    }
+
+    @GetMapping("/existe/{id}")
+    public ResponseEntity<UsuarioValidacionDTO> validarExistencia(
+            @PathVariable Long id,
+            HttpServletRequest request) {
+        GatewayAuth.requireUser(request);
+        return ResponseEntity.ok(usuarioService.validarExistencia(id));
     }
 
     @PutMapping("/{id}")
