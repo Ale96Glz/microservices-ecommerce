@@ -1,5 +1,6 @@
 package com.aosorio.ecommerce.pagos.event;
 
+import com.aosorio.ecommerce.events.KafkaTopics;
 import com.aosorio.ecommerce.events.PaymentProcessedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,7 +12,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class PaymentEventPublisher {
 
-    public static final String TOPIC = "payment-processed";
+    public static final String TOPIC = KafkaTopics.PAYMENT_PROCESSED;
     private static final Logger log = LoggerFactory.getLogger(PaymentEventPublisher.class);
 
     private final boolean kafkaEnabled;

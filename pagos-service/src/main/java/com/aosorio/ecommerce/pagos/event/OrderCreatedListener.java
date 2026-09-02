@@ -1,5 +1,6 @@
 package com.aosorio.ecommerce.pagos.event;
 
+import com.aosorio.ecommerce.events.KafkaTopics;
 import com.aosorio.ecommerce.events.OrderCreatedEvent;
 import com.aosorio.ecommerce.pagos.service.PagoService;
 import org.slf4j.Logger;
@@ -20,7 +21,7 @@ public class OrderCreatedListener {
         this.pagoService = pagoService;
     }
 
-    @KafkaListener(topics = "order-created", groupId = "pagos-service")
+    @KafkaListener(topics = KafkaTopics.ORDER_CREATED, groupId = "pagos-service")
     public void onOrderCreated(OrderCreatedEvent event) {
         log.info("Recibido OrderCreatedEvent para pedido {}", event.pedidoId());
         pagoService.procesarDesdeEvento(event);

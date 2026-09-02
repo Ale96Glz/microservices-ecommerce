@@ -1,5 +1,6 @@
 package com.aosorio.ecommerce.notificaciones.event;
 
+import com.aosorio.ecommerce.events.KafkaTopics;
 import com.aosorio.ecommerce.events.PaymentProcessedEvent;
 import com.aosorio.ecommerce.notificaciones.service.NotificacionService;
 import org.slf4j.Logger;
@@ -21,7 +22,7 @@ public class PaymentProcessedListener {
     }
 
     @KafkaListener(
-            topics = "payment-processed",
+            topics = KafkaTopics.PAYMENT_PROCESSED,
             groupId = "notificaciones-service",
             containerFactory = "paymentProcessedKafkaListenerContainerFactory"
     )

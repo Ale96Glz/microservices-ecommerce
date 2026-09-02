@@ -1,5 +1,6 @@
 package com.aosorio.ecommerce.pedidos.event;
 
+import com.aosorio.ecommerce.events.KafkaTopics;
 import com.aosorio.ecommerce.events.OrderCreatedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,7 +12,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class OrderEventPublisher {
 
-    public static final String TOPIC = "order-created";
+    public static final String TOPIC = KafkaTopics.ORDER_CREATED;
     private static final Logger log = LoggerFactory.getLogger(OrderEventPublisher.class);
 
     private final boolean kafkaEnabled;

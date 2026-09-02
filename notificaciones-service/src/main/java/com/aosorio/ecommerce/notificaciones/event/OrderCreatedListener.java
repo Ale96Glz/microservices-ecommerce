@@ -1,5 +1,6 @@
 package com.aosorio.ecommerce.notificaciones.event;
 
+import com.aosorio.ecommerce.events.KafkaTopics;
 import com.aosorio.ecommerce.events.OrderCreatedEvent;
 import com.aosorio.ecommerce.notificaciones.service.NotificacionService;
 import org.slf4j.Logger;
@@ -21,7 +22,7 @@ public class OrderCreatedListener {
     }
 
     @KafkaListener(
-            topics = "order-created",
+            topics = KafkaTopics.ORDER_CREATED,
             groupId = "notificaciones-service",
             containerFactory = "orderCreatedKafkaListenerContainerFactory"
     )
