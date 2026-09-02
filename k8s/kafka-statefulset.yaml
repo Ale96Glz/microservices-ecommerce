@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: kafka
-          image: bitnami/kafka:3.7
+          image: bitnamilegacy/kafka:3.7.1
           imagePullPolicy: IfNotPresent
           ports:
             - name: internal
@@ -41,7 +41,7 @@ spec:
             - name: KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP
               value: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
             - name: KAFKA_CFG_CONTROLLER_QUORUM_VOTERS
-              value: 0@kafka:9093
+              value: 0@kafka-0.kafka.ecommerce.svc.cluster.local:9093
             - name: KAFKA_CFG_CONTROLLER_LISTENER_NAMES
               value: CONTROLLER
             - name: KAFKA_CFG_INTER_BROKER_LISTENER_NAME
@@ -51,23 +51,23 @@ spec:
           readinessProbe:
             exec:
               command:
-                - sh
+                - bash
                 - -c
-                - kafka-topics.sh --bootstrap-server localhost:9092 --list > /dev/null 2>&1
-            initialDelaySeconds: 15
+                - (exec 3<>/dev/tcp/127.0.0.1/29092) 2>/dev/null
+            initialDelaySeconds: 20
             periodSeconds: 10
-            timeoutSeconds: 10
-            failureThreshold: 12
+            timeoutSeconds: 5
+            failureThreshold: 30
           livenessProbe:
             exec:
               command:
-                - sh
+                - bash
                 - -c
-                - kafka-topics.sh --bootstrap-server localhost:9092 --list > /dev/null 2>&1
-            initialDelaySeconds: 30
-            periodSeconds: 15
-            timeoutSeconds: 10
-            failureThreshold: 6
+                - (exec 3<>/dev/tcp/127.0.0.1/29092) 2>/dev/null
+            initialDelaySeconds: 40
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 12
           resources:
             requests:
               cpu: 250m

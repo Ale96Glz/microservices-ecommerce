@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: notificaciones-service
-          image: ghcr.io/ale96glz/microservices-ecommerce/notificaciones-service:1.0.1
+          image: ghcr.io/ale96glz/microservices-ecommerce/notificaciones-service:dev-local
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

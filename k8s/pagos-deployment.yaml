@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: pagos-service
-          image: ghcr.io/ale96glz/microservices-ecommerce/pagos-service:1.0.1
+          image: ghcr.io/ale96glz/microservices-ecommerce/pagos-service:dev-local
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

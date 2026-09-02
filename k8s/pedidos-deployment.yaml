@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: pedidos-service
-          image: ghcr.io/ale96glz/microservices-ecommerce/pedidos-service:1.0.1
+          image: ghcr.io/ale96glz/microservices-ecommerce/pedidos-service:dev-local
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -54,6 +54,11 @@ spec:
                 configMapKeyRef:
                   name: ecommerce-config
                   key: CATALOGO_SERVICE_URL
+            - name: AUTH_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ecommerce-config
+                  key: AUTH_SERVICE_URL
           startupProbe:
             httpGet:
               path: /actuator/health
