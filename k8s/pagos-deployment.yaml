@@ -19,8 +19,8 @@ spec:
     spec:
       containers:
         - name: pagos-service
-          image: ghcr.io/ale96glz/microservices-ecommerce/pagos-service:dev-local
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/ale96glz/microservices-ecommerce/pagos-service:1.0.1
+          imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 8084
