@@ -36,6 +36,7 @@ catálogo, pedidos, pagos y notificaciones mediante APIs REST.
 - H2 para ejecución local.
 - PostgreSQL para ejecución con Docker.
 - Kafka para la comunicación entre pedidos, pagos y notificaciones.
+- Reintentos con backoff y Dead Letter Topics (DLT) para eventos Kafka fallidos.
 - Health checks compatibles con Kubernetes.
 
 ## Arquitectura de eventos
@@ -49,6 +50,11 @@ Pedido creado
                     └── PaymentProcessedEvent
                             └── notificaciones-service registra el aviso
 ```
+
+Los consumidores (pagos y notificaciones) reintentan los eventos fallidos con
+backoff fijo (3 intentos por defecto) y, al agotarlos, publican el mensaje en
+un Dead Letter Topic (`<topico>.DLT`) para su diagnóstico sin bloquear la
+partición original.
 
 En ejecución local Kafka está deshabilitado por defecto para facilitar el
 desarrollo. En Docker Compose se habilita automáticamente.
@@ -223,7 +229,7 @@ Estos endpoints serán utilizados más adelante por las `readinessProbe` y
 - [x] Implementar reserva y actualización de stock (descuento atómico al crear el pedido).
 - [x] Validar la existencia y el estado del usuario desde pedidos.
 - [ ] Mejorar el ciclo de estados de pedidos y pagos.
-- [ ] Agregar reintentos y manejo de errores para eventos Kafka.
+- [x] Agregar reintentos y manejo de errores para eventos Kafka (backoff + Dead Letter Topics).
 - [ ] Implementar Transactional Outbox.
 
 ### Fase 3 — Seguridad y operación
