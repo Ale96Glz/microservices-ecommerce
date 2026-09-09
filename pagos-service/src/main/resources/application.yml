@@ -28,6 +28,11 @@ pagos:
   kafka:
     enabled: ${PAGOS_KAFKA_ENABLED:false}
 
+kafka:
+  retry:
+    max-attempts: 3
+    backoff-ms: 1000
+
 springdoc:
   default-flat-param-object: true
 
