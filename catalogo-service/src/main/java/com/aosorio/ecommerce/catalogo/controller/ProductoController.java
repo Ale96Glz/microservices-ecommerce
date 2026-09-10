@@ -83,4 +83,13 @@ public class ProductoController {
         GatewayAuth.requireUser(request);
         return ResponseEntity.ok(productoService.descontarStock(id, cantidad));
     }
+
+    @PutMapping("/{id}/stock/reponer")
+    public ResponseEntity<ProductoResponseDTO> reponerStock(
+            @PathVariable Long id,
+            @RequestParam int cantidad,
+            HttpServletRequest request) {
+        GatewayAuth.requireUser(request);
+        return ResponseEntity.ok(productoService.reponerStock(id, cantidad));
+    }
 }

@@ -109,6 +109,28 @@ public class ProductoServiceImpl implements ProductoService {
     }
 
     @Override
+    @Transactional
+    public ProductoResponseDTO reponerStock(Long id, int cantidad) {
+        log.info("Reponiendo {} unidades de stock del producto: {}", cantidad, id);
+
+        int actualizados = productoRepository.reponerStock(id, cantidad);
+        if (actualizados == 0) {
+            throw new ResourceNotFoundException("No se encontró el producto con id: " + id);
+        }
+
+        Producto producto = productoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el producto con id: " + id));
+
+        if (producto.getStock() > 0 && producto.getEstado() == Producto.EstadoProducto.AGOTADO) {
+            producto.setEstado(Producto.EstadoProducto.ACTIVO);
+        }
+
+        Producto actualizado = productoRepository.save(producto);
+        log.info("Stock restaurado del producto {}: {} unidades", id, actualizado.getStock());
+        return productoMapper.toResponseDto(actualizado);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public ProductoResponseDTO obtenerPorId(Long id) {
         Producto producto = productoRepository.findById(id)

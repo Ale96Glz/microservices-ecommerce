@@ -16,6 +16,8 @@ public interface ProductoService {
 
     ProductoResponseDTO descontarStock(Long id, int cantidad);
 
+    ProductoResponseDTO reponerStock(Long id, int cantidad);
+
     ProductoResponseDTO obtenerPorId(Long id);
 
     List<ProductoResponseDTO> obtenerTodos();
