@@ -29,28 +29,33 @@ import java.util.Map;
 public class KafkaConfig {
 
     @Bean
-    ConsumerFactory<String, OrderCreatedEvent> orderCreatedConsumerFactory(
+    ConsumerFactory<String, PaymentProcessedEvent> paymentProcessedConsumerFactory(
             @Value("${spring.kafka.bootstrap-servers}") String bootstrapServers
     ) {
+        Map<String, Object> props = consumerProps(bootstrapServers, PaymentProcessedEvent.class);
+        return new DefaultKafkaConsumerFactory<>(props);
+    }
+
+    @Bean
+    ConcurrentKafkaListenerContainerFactory<String, PaymentProcessedEvent> paymentProcessedKafkaListenerContainerFactory(
+            ConsumerFactory<String, PaymentProcessedEvent> paymentProcessedConsumerFactory
+    ) {
+        ConcurrentKafkaListenerContainerFactory<String, PaymentProcessedEvent> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(paymentProcessedConsumerFactory);
+        return factory;
+    }
+
+    private Map<String, Object> consumerProps(String bootstrapServers, Class<?> defaultType) {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "pedidos-service");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
         props.put(JsonDeserializer.TRUSTED_PACKAGES, "com.aosorio.ecommerce.events");
-        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, OrderCreatedEvent.class.getName());
+        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, defaultType.getName());
         props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false);
-        return new DefaultKafkaConsumerFactory<>(props);
-    }
-
-    @Bean
-    ConcurrentKafkaListenerContainerFactory<String, OrderCreatedEvent> kafkaListenerContainerFactory(
-            ConsumerFactory<String, OrderCreatedEvent> orderCreatedConsumerFactory
-    ) {
-        ConcurrentKafkaListenerContainerFactory<String, OrderCreatedEvent> factory =
-                new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(orderCreatedConsumerFactory);
-        return factory;
+        return props;
     }
 
     @Bean

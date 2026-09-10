@@ -21,7 +21,11 @@ public class PaymentProcessedListener {
         this.pedidoService = pedidoService;
     }
 
-    @KafkaListener(topics = KafkaTopics.PAYMENT_PROCESSED, groupId = "pedidos-service")
+    @KafkaListener(
+            topics = KafkaTopics.PAYMENT_PROCESSED,
+            groupId = "pedidos-service",
+            containerFactory = "paymentProcessedKafkaListenerContainerFactory"
+    )
     public void onPaymentProcessed(PaymentProcessedEvent event) {
         log.info("Recibido PaymentProcessedEvent para pedido {} con estado {}", event.pedidoId(), event.estado());
         pedidoService.procesarResultadoPago(event);
