@@ -1,6 +1,7 @@
 package com.aosorio.ecommerce.pedidos.service;
 
 import com.aosorio.ecommerce.events.OrderCreatedEvent;
+import com.aosorio.ecommerce.events.PaymentProcessedEvent;
 import com.aosorio.ecommerce.pedidos.client.AuthClient;
 import com.aosorio.ecommerce.pedidos.client.CatalogoClient;
 import com.aosorio.ecommerce.pedidos.client.ProductoCatalogoDTO;
@@ -96,6 +97,34 @@ public class PedidoServiceImpl implements PedidoService {
         Pedido cancelado = pedidoRepository.save(pedido);
         log.info("Se ha cancelado el pedido: {}", cancelado.getId());
         return pedidoMapper.toResponseDto(cancelado);
+    }
+
+    @Override
+    @Transactional
+    public PedidoResponseDTO procesarResultadoPago(PaymentProcessedEvent event) {
+        Pedido pedido = pedidoRepository.findWithItemsById(event.pedidoId())
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el pedido con id: " + event.pedidoId()));
+
+        if (pedido.getEstado() != Pedido.EstadoPedido.CREADO) {
+            log.info("El pedido {} ya no está en estado CREADO (estado actual: {}). Se ignora el resultado del pago.",
+                    pedido.getId(), pedido.getEstado());
+            return pedidoMapper.toResponseDto(pedido);
+        }
+
+        Pedido.EstadoPedido estadoSolicitado = pedido.getEstado();
+        if ("PROCESADO".equals(event.estado())) {
+            estadoSolicitado = Pedido.EstadoPedido.PAGADO;
+            log.info("El pedido {} ha sido marcado como PAGADO", pedido.getId());
+        } else if ("RECHAZADO".equals(event.estado())) {
+            estadoSolicitado = Pedido.EstadoPedido.CANCELADO;
+            pedido.getItems().forEach(item ->
+                    catalogoClient.reponerStock(pedido.getUsuarioId(), item.getProductoId(), item.getCantidad()));
+            log.info("El pedido {} ha sido CANCELADO por rechazo de pago y su stock liberado", pedido.getId());
+        }
+
+        pedido.setEstado(estadoSolicitado);
+        Pedido actualizado = pedidoRepository.save(pedido);
+        return pedidoMapper.toResponseDto(actualizado);
     }
 
     @Override

@@ -1,5 +1,6 @@
 package com.aosorio.ecommerce.pedidos.service;
 
+import com.aosorio.ecommerce.events.PaymentProcessedEvent;
 import com.aosorio.ecommerce.pedidos.dto.PageResponseDTO;
 import com.aosorio.ecommerce.pedidos.dto.PedidoRequestDTO;
 import com.aosorio.ecommerce.pedidos.dto.PedidoResponseDTO;
@@ -11,6 +12,8 @@ public interface PedidoService {
     PedidoResponseDTO crear(Long usuarioId, PedidoRequestDTO pedidoRequestDTO);
 
     PedidoResponseDTO cancelar(Long id);
+
+    PedidoResponseDTO procesarResultadoPago(PaymentProcessedEvent event);
 
     PedidoResponseDTO obtenerPorId(Long id);
 
