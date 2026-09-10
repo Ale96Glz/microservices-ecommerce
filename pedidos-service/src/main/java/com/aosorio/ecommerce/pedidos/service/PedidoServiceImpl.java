@@ -93,9 +93,12 @@ public class PedidoServiceImpl implements PedidoService {
                     "No se puede cancelar el pedido " + id + " porque está en estado " + pedido.getEstado());
         }
 
+        pedido.getItems().forEach(item ->
+                catalogoClient.reponerStock(pedido.getUsuarioId(), item.getProductoId(), item.getCantidad()));
+
         pedido.setEstado(Pedido.EstadoPedido.CANCELADO);
         Pedido cancelado = pedidoRepository.save(pedido);
-        log.info("Se ha cancelado el pedido: {}", cancelado.getId());
+        log.info("Se ha cancelado el pedido {} y su stock liberado", cancelado.getId());
         return pedidoMapper.toResponseDto(cancelado);
     }
 
