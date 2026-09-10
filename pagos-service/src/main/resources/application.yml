@@ -27,6 +27,7 @@ spring:
 pagos:
   kafka:
     enabled: ${PAGOS_KAFKA_ENABLED:false}
+  monto-maximo-aprobado: ${PAGOS_MONTO_MAXIMO_APROBADO:100.00}
 
 kafka:
   retry:

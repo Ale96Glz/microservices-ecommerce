@@ -13,6 +13,7 @@ import com.aosorio.ecommerce.pagos.mapper.PagoMapper;
 import com.aosorio.ecommerce.pagos.repository.PagoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +30,9 @@ public class PagoServiceImpl implements PagoService {
     private final PagoRepository pagoRepository;
     private final PagoMapper pagoMapper;
     private final PaymentEventPublisher paymentEventPublisher;
+
+    @Value("${pagos.monto-maximo-aprobado}")
+    private BigDecimal montoMaximoAprobado;
 
     @Override
     @Transactional
@@ -90,15 +94,19 @@ public class PagoServiceImpl implements PagoService {
             throw new ResourceInUseException("Ya existe un pago para el pedido con id: " + pedidoId);
         }
 
+        Pago.EstadoPago estado = monto.compareTo(montoMaximoAprobado) > 0
+                ? Pago.EstadoPago.RECHAZADO
+                : Pago.EstadoPago.PROCESADO;
+
         Pago pago = Pago.builder()
                 .pedidoId(pedidoId)
                 .usuarioId(usuarioId)
                 .monto(monto)
-                .estado(Pago.EstadoPago.PROCESADO)
+                .estado(estado)
                 .build();
 
         Pago guardado = pagoRepository.save(pago);
-        log.info("Se ha procesado el pago {} para pedido {}", guardado.getId(), pedidoId);
+        log.info("Se ha procesado el pago {} para pedido {} con estado {}", guardado.getId(), pedidoId, estado);
 
         paymentEventPublisher.publish(new PaymentProcessedEvent(
                 guardado.getId(),
