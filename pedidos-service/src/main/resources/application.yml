@@ -38,6 +38,8 @@ auth:
 pedidos:
   kafka:
     enabled: ${PEDIDOS_KAFKA_ENABLED:false}
+  outbox:
+    poll-interval-ms: ${PEDIDOS_OUTBOX_POLL_INTERVAL_MS:5000}
 
 springdoc:
   default-flat-param-object: true

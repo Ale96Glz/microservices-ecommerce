@@ -5,17 +5,20 @@ import com.aosorio.ecommerce.events.PaymentProcessedEvent;
 import com.aosorio.ecommerce.pedidos.client.AuthClient;
 import com.aosorio.ecommerce.pedidos.client.CatalogoClient;
 import com.aosorio.ecommerce.pedidos.client.ProductoCatalogoDTO;
+import com.aosorio.ecommerce.pedidos.domain.OutboxEvent;
 import com.aosorio.ecommerce.pedidos.domain.Pedido;
 import com.aosorio.ecommerce.pedidos.domain.PedidoItem;
 import com.aosorio.ecommerce.pedidos.dto.PageResponseDTO;
 import com.aosorio.ecommerce.pedidos.dto.PedidoItemRequestDTO;
 import com.aosorio.ecommerce.pedidos.dto.PedidoRequestDTO;
 import com.aosorio.ecommerce.pedidos.dto.PedidoResponseDTO;
-import com.aosorio.ecommerce.pedidos.event.OrderEventPublisher;
 import com.aosorio.ecommerce.pedidos.exception.ResourceInUseException;
 import com.aosorio.ecommerce.pedidos.exception.ResourceNotFoundException;
 import com.aosorio.ecommerce.pedidos.mapper.PedidoMapper;
+import com.aosorio.ecommerce.pedidos.repository.OutboxEventRepository;
 import com.aosorio.ecommerce.pedidos.repository.PedidoRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
@@ -35,7 +38,8 @@ public class PedidoServiceImpl implements PedidoService {
     private final CatalogoClient catalogoClient;
     private final AuthClient authClient;
     private final PedidoMapper pedidoMapper;
-    private final OrderEventPublisher orderEventPublisher;
+    private final OutboxEventRepository outboxEventRepository;
+    private final ObjectMapper objectMapper;
 
     @Override
     @Transactional
@@ -72,12 +76,24 @@ public class PedidoServiceImpl implements PedidoService {
         Pedido guardado = pedidoRepository.save(pedido);
         log.info("Se ha guardado el pedido: {}", guardado.getId());
 
-        orderEventPublisher.publish(new OrderCreatedEvent(
+        OrderCreatedEvent event = new OrderCreatedEvent(
                 guardado.getId(),
                 guardado.getUsuarioId(),
                 guardado.getTotal(),
                 guardado.getFechaCreacion().toInstant(ZoneOffset.UTC)
-        ));
+        );
+
+        try {
+            outboxEventRepository.save(OutboxEvent.builder()
+                    .agregadoId(guardado.getId())
+                    .tipoEvento("ORDER_CREATED")
+                    .payload(objectMapper.writeValueAsString(event))
+                    .estado(OutboxEvent.EstadoOutbox.PENDIENTE)
+                    .build());
+            log.info("Evento OrderCreated del pedido {} guardado en la tabla outbox", guardado.getId());
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("No se pudo serializar el evento OrderCreated del pedido: " + guardado.getId(), e);
+        }
 
         return pedidoMapper.toResponseDto(guardado);
     }
