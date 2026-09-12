@@ -37,6 +37,7 @@ catálogo, pedidos, pagos y notificaciones mediante APIs REST.
 - PostgreSQL para ejecución con Docker.
 - Kafka para la comunicación entre pedidos, pagos y notificaciones.
 - Ciclo de estados de pedidos (CREADO → PAGADO / CANCELADO) y pagos (PROCESADO / RECHAZADO), con simulación de rechazo y liberación de stock al cancelar o rechazar.
+- Transactional Outbox: los eventos (OrderCreated, PaymentProcessed) se guardan en una tabla interna en la misma transacción del dato de negocio y un publicador los envía a Kafka.
 - Reintentos con backoff y Dead Letter Topics (DLT) para eventos Kafka fallidos.
 - Health checks compatibles con Kubernetes.
 
@@ -46,11 +47,19 @@ Con Kafka habilitado, el flujo principal es:
 
 ```text
 Pedido creado
-    └── OrderCreatedEvent
+    ├── guarda Pedido + OutboxEvent (misma transacción)
+    └── Outbox publisher publica OrderCreatedEvent
             └── pagos-service procesa el pago
-                    └── PaymentProcessedEvent
+                    ├── guarda Pago + OutboxEvent (misma transacción)
+                    └── Outbox publisher publica PaymentProcessedEvent
                             └── notificaciones-service registra el aviso
 ```
+
+Para garantizar consistencia entre la base de datos y Kafka, cada servicio productor
+(augura un evento en una tabla `outbox_event` dentro de la misma transacción que
+persiste el dato de negocio. Un publicador programado (`@Scheduled`) lee los eventos
+pendientes, los publica en Kafka y los marca como `PUBLICADO`. Si el envío falla, el
+evento permanece `PENDIENTE` y se reintenta en el siguiente ciclo.
 
 Los consumidores (pagos y notificaciones) reintentan los eventos fallidos con
 backoff fijo (3 intentos por defecto) y, al agotarlos, publican el mensaje en
@@ -231,7 +240,7 @@ Estos endpoints serán utilizados más adelante por las `readinessProbe` y
 - [x] Validar la existencia y el estado del usuario desde pedidos.
 - [x] Mejorar el ciclo de estados de pedidos y pagos.
 - [x] Agregar reintentos y manejo de errores para eventos Kafka (backoff + Dead Letter Topics).
-- [ ] Implementar Transactional Outbox.
+- [x] Implementar Transactional Outbox.
 
 ### Fase 3 — Seguridad y operación
 
