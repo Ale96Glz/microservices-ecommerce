@@ -36,6 +36,7 @@ catálogo, pedidos, pagos y notificaciones mediante APIs REST.
 - H2 para ejecución local.
 - PostgreSQL para ejecución con Docker.
 - Kafka para la comunicación entre pedidos, pagos y notificaciones.
+- Ciclo de estados de pedidos (CREADO → PAGADO / CANCELADO) y pagos (PROCESADO / RECHAZADO), con simulación de rechazo y liberación de stock al cancelar o rechazar.
 - Reintentos con backoff y Dead Letter Topics (DLT) para eventos Kafka fallidos.
 - Health checks compatibles con Kubernetes.
 
@@ -228,7 +229,7 @@ Estos endpoints serán utilizados más adelante por las `readinessProbe` y
 
 - [x] Implementar reserva y actualización de stock (descuento atómico al crear el pedido).
 - [x] Validar la existencia y el estado del usuario desde pedidos.
-- [ ] Mejorar el ciclo de estados de pedidos y pagos.
+- [x] Mejorar el ciclo de estados de pedidos y pagos.
 - [x] Agregar reintentos y manejo de errores para eventos Kafka (backoff + Dead Letter Topics).
 - [ ] Implementar Transactional Outbox.
 
