@@ -2,15 +2,18 @@ package com.aosorio.ecommerce.pagos.service;
 
 import com.aosorio.ecommerce.events.OrderCreatedEvent;
 import com.aosorio.ecommerce.events.PaymentProcessedEvent;
+import com.aosorio.ecommerce.pagos.domain.OutboxEvent;
 import com.aosorio.ecommerce.pagos.domain.Pago;
 import com.aosorio.ecommerce.pagos.dto.PageResponseDTO;
 import com.aosorio.ecommerce.pagos.dto.PagoRequestDTO;
 import com.aosorio.ecommerce.pagos.dto.PagoResponseDTO;
-import com.aosorio.ecommerce.pagos.event.PaymentEventPublisher;
 import com.aosorio.ecommerce.pagos.exception.ResourceInUseException;
 import com.aosorio.ecommerce.pagos.exception.ResourceNotFoundException;
 import com.aosorio.ecommerce.pagos.mapper.PagoMapper;
+import com.aosorio.ecommerce.pagos.repository.OutboxEventRepository;
 import com.aosorio.ecommerce.pagos.repository.PagoRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,7 +32,8 @@ public class PagoServiceImpl implements PagoService {
 
     private final PagoRepository pagoRepository;
     private final PagoMapper pagoMapper;
-    private final PaymentEventPublisher paymentEventPublisher;
+    private final OutboxEventRepository outboxEventRepository;
+    private final ObjectMapper objectMapper;
 
     @Value("${pagos.monto-maximo-aprobado}")
     private BigDecimal montoMaximoAprobado;
@@ -108,14 +112,26 @@ public class PagoServiceImpl implements PagoService {
         Pago guardado = pagoRepository.save(pago);
         log.info("Se ha procesado el pago {} para pedido {} con estado {}", guardado.getId(), pedidoId, estado);
 
-        paymentEventPublisher.publish(new PaymentProcessedEvent(
+        PaymentProcessedEvent event = new PaymentProcessedEvent(
                 guardado.getId(),
                 guardado.getPedidoId(),
                 guardado.getUsuarioId(),
                 guardado.getMonto(),
                 guardado.getEstado().name(),
                 guardado.getFechaProcesado().toInstant(ZoneOffset.UTC)
-        ));
+        );
+
+        try {
+            outboxEventRepository.save(OutboxEvent.builder()
+                    .agregadoId(guardado.getId())
+                    .tipoEvento("PAYMENT_PROCESSED")
+                    .payload(objectMapper.writeValueAsString(event))
+                    .estado(OutboxEvent.EstadoOutbox.PENDIENTE)
+                    .build());
+            log.info("Evento PaymentProcessed del pago {} guardado en la tabla outbox", guardado.getId());
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("No se pudo serializar el evento PaymentProcessed del pago: " + guardado.getId(), e);
+        }
 
         return pagoMapper.toResponseDto(guardado);
     }
