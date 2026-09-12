@@ -56,7 +56,7 @@ Pedido creado
 ```
 
 Para garantizar consistencia entre la base de datos y Kafka, cada servicio productor
-(augura un evento en una tabla `outbox_event` dentro de la misma transacción que
+guarda un evento en una tabla `outbox_event` dentro de la misma transacción que
 persiste el dato de negocio. Un publicador programado (`@Scheduled`) lee los eventos
 pendientes, los publica en Kafka y los marca como `PUBLICADO`. Si el envío falla, el
 evento permanece `PENDIENTE` y se reintenta en el siguiente ciclo.
