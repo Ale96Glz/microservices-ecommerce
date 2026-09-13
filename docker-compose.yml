@@ -154,6 +154,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-ecommerce}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       NOTIFICACIONES_KAFKA_ENABLED: "true"
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-a-long-random-secret-key-at-least-32-chars}
+      JWT_FILTER_ENABLED: "true"
 
   api-gateway:
     build:

@@ -36,6 +36,13 @@ kafka:
 springdoc:
   default-flat-param-object: true
 
+jwt:
+  secret: ${JWT_SECRET:change-me-to-a-long-random-secret-key-at-least-32-chars}
+  filter:
+    enabled: ${JWT_FILTER_ENABLED:true}
+    public-paths: ${JWT_PUBLIC_PATHS:}
+    public-get-prefixes: ${JWT_PUBLIC_GET_PREFIXES:}
+
 management:
   endpoints:
     web:
