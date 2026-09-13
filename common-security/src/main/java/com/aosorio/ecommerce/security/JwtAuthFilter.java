@@ -1,29 +1,20 @@
-package com.aosorio.ecommerce.pedidos.security;
+package com.aosorio.ecommerce.security;
 
-import com.aosorio.ecommerce.pedidos.exception.AccessDeniedException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
-import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 
-@Component
-@Slf4j
-@ConditionalOnProperty(name = "jwt.filter.enabled", havingValue = "true", matchIfMissing = true)
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private static final List<String> DEFAULT_PUBLIC_PATHS = List.of(
@@ -41,12 +32,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     public JwtAuthFilter(
             JwtValidator jwtValidator,
-            @Value("${jwt.filter.public-paths:}") String publicPaths,
-            @Value("${jwt.filter.public-get-prefixes:}") String publicGetPrefixes
+            List<String> publicPaths,
+            List<String> publicGetPrefixes
     ) {
         this.jwtValidator = jwtValidator;
-        this.publicPaths = split(publicPaths);
-        this.publicGetPrefixes = split(publicGetPrefixes);
+        this.publicPaths = publicPaths;
+        this.publicGetPrefixes = publicGetPrefixes;
     }
 
     @Override
@@ -72,8 +63,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         try {
             Claims claims = jwtValidator.validate(token);
             filterChain.doFilter(new JwtIdentityRequestWrapper(request, claims), response);
-        } catch (JwtException | IllegalArgumentException | AccessDeniedException ex) {
-            log.warn("Token inválido en {}: {}", path, ex.getMessage());
+        } catch (JwtException | IllegalArgumentException ex) {
             writeUnauthorized(response, "Token inválido o expirado");
         }
     }
@@ -93,16 +83,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         return false;
     }
 
-    private List<String> split(String value) {
-        if (value == null || value.isBlank()) {
-            return List.of();
-        }
-        return Arrays.stream(value.split(","))
-                .map(String::trim)
-                .filter(part -> !part.isEmpty())
-                .toList();
-    }
-
     private void writeUnauthorized(HttpServletResponse response, String message) throws IOException {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json");
@@ -110,5 +90,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 + "\",\"status\":401,\"error\":\"Unauthorized\",\"message\":\"" + message + "\"}";
         response.getWriter().write(body);
         response.getWriter().flush();
+    }
+
+    public static List<String> asList(String commaSeparated) {
+        if (commaSeparated == null || commaSeparated.isBlank()) {
+            return List.of();
+        }
+        return Arrays.stream(commaSeparated.split(","))
+                .map(String::trim)
+                .filter(part -> !part.isEmpty())
+                .toList();
     }
 }

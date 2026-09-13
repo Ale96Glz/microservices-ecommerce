@@ -1,4 +1,4 @@
-package com.aosorio.ecommerce.pedidos.security;
+package com.aosorio.ecommerce.security;
 
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
