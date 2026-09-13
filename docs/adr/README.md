@@ -10,6 +10,7 @@ Michael Nygard (Contexto → Decisión → Consecuencias).
 | [ADR-0003](./adr/ADR-0003-kafka-asiincrono.md) | Comunicación asíncrona entre servicios mediante Kafka | Aceptado |
 | [ADR-0004](./adr/ADR-0004-persistencia-por-servicio.md) | Persistencia por servicio (H2 local, PostgreSQL Docker) | Aceptado |
 | [ADR-0005](./adr/ADR-0005-ingress-api-gateway.md) | Exposición del api-gateway mediante Ingress en Kubernetes | Aceptado |
+| [ADR-0006](./adr/ADR-0006-jwt-por-microservicio.md) | Validación JWT dentro de cada microservicio (defensa en profundidad) | Aceptado |
 
 ## Diagramas C4 (Modelo C4)
 
