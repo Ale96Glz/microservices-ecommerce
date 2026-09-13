@@ -15,9 +15,13 @@ public class AuthClient {
 
     public AuthClient(
             RestClient.Builder builder,
-            @Value("${auth.service.url}") String authBaseUrl
+            @Value("${auth.service.url}") String authBaseUrl,
+            JwtPropagationInterceptor jwtPropagationInterceptor
     ) {
-        this.restClient = builder.baseUrl(authBaseUrl).build();
+        this.restClient = builder
+                .requestInterceptor(jwtPropagationInterceptor)
+                .baseUrl(authBaseUrl)
+                .build();
     }
 
     public UsuarioValidacionDTO validarUsuario(Long usuarioId) {

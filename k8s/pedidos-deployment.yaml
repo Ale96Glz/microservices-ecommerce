@@ -59,6 +59,13 @@ spec:
                 configMapKeyRef:
                   name: ecommerce-config
                   key: AUTH_SERVICE_URL
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: ecommerce-secrets
+                  key: JWT_SECRET
+            - name: JWT_FILTER_ENABLED
+              value: "true"
           startupProbe:
             httpGet:
               path: /actuator/health

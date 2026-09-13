@@ -17,9 +17,13 @@ public class CatalogoClient {
 
     public CatalogoClient(
             RestClient.Builder builder,
-            @Value("${catalogo.service.url}") String catalogoBaseUrl
+            @Value("${catalogo.service.url}") String catalogoBaseUrl,
+            JwtPropagationInterceptor jwtPropagationInterceptor
     ) {
-        this.restClient = builder.baseUrl(catalogoBaseUrl).build();
+        this.restClient = builder
+                .requestInterceptor(jwtPropagationInterceptor)
+                .baseUrl(catalogoBaseUrl)
+                .build();
     }
 
     public ProductoCatalogoDTO obtenerProducto(Long productoId) {
