@@ -46,6 +46,10 @@ spec:
                   key: JWT_SECRET
             - name: JWT_EXPIRATION_MS
               value: "3600000"
+            - name: JWT_FILTER_ENABLED
+              value: "true"
+            - name: JWT_PUBLIC_PATHS
+              value: "/api/v1/auth/login,/api/v1/auth/register"
           startupProbe:
             httpGet:
               path: /actuator/health
