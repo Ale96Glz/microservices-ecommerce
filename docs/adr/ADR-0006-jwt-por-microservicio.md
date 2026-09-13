@@ -64,6 +64,24 @@ capa que autentica a clientes externos y propaga la identidad. A partir de ahora
 El token es firmado por `auth-service`, compartido con el gateway y con todos
 los microservicios mediante el `JWT_SECRET` del Secret `ecommerce-secrets`.
 
+## Implementación (extracción a módulo común)
+
+Para evitar la duplicación de código en cinco servicios, la implementación se
+centralizó en un **módulo compartido `common-security`** (mismo patrón que el ya
+existente `common-events`):
+
+- Paquete `com.aosorio.ecommerce.security` con `JwtValidator`, `JwtAuthFilter`
+  y `JwtIdentityRequestWrapper` (una sola copia).
+- Se registra mediante **Spring Boot AutoConfiguration**
+  (`JwtSecurityAutoConfiguration` + `META-INF/spring/*.imports`) con la misma
+  condición `@ConditionalOnProperty(jwt.filter.enabled)`.
+- Cada microservicio solo declara la dependencia a `common-security` y conserva
+  su propia configuración (`jwt.secret`, `jwt.filter.public-paths`,
+  `jwt.filter.public-get-prefixes`), que es donde vive la variabilidad por
+  servicio (p. ej. los `GET` públicos de catálogo).
+- Las dependencias JJWT viven únicamente en `common-security`; los servicios
+  dejaron de declararlas en su `pom.xml`.
+
 ## Consecuencias
 
 ### Positivas
@@ -80,15 +98,17 @@ los microservicios mediante el `JWT_SECRET` del Secret `ecommerce-secrets`.
 
 ### Negativas / Compromisos
 
-- **Duplicación de código**: cada microservicio incorpora una copia de
-  `JwtValidator` y `JwtAuthFilter` (misma base ya aceptada en ADR-0002). Un
-  módulo común de seguridad se evaluará si la duplicación persiste.
+- **Acoplamiento a `common-security`**: los servicios comparten un mismo filtro;
+  un cambio en su firma o comportamiento afecta a todos a la vez. Es aceptado
+  porque el objetivo de seguridad es idéntico en todos y es el mismo tipo de
+  acoplamiento que ya introduce `common-events`.
 - **Suplanta el ADR-0002 en una parte de su justificación**: el gateway deja de
   ser el único que toca JWT; cualquiera de las capas puede rechazar. Hay que
   mantener `JWT_SECRET` sincronizado en todos los despliegues.
-- **Configuración por servicio**: cada `application.yml` ahora requiere
-  `jwt.secret` y la activación/desactivación del filtro incrementa la superficie
-  de configuración.
+- **Configuración por servicio**: cada microservicio declara la dependencia a
+  `common-security` y configura `jwt.secret` y los prefijos públicos del filtro;
+  la superficie de configuración aumenta (mitigada al centralizar el código en
+  el módulo común).
 - **Secreto compartido estático**: un `JWT_SECRET` comprometido sigue
   comprometiéndolo todo (riesgo ya documentado en ADR-0002); la rotación y los
   secretos por servicio quedan como trabajo futuro.
