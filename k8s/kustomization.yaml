@@ -11,6 +11,8 @@ resources:
   - postgres-statefulset.yaml
   - kafka-service.yaml
   - kafka-statefulset.yaml
+  - redis-service.yaml
+  - redis-deployment.yaml
   - catalogo-deployment.yaml
   - catalogo-service.yaml
   - auth-deployment.yaml

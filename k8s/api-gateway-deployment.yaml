@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: api-gateway
-          image: ghcr.io/ale96glz/microservices-ecommerce/api-gateway:1.0.4
+          image: ghcr.io/ale96glz/microservices-ecommerce/api-gateway:1.0.5
           imagePullPolicy: Always
           ports:
             - name: http
@@ -60,6 +60,41 @@ spec:
                 configMapKeyRef:
                   name: ecommerce-config
                   key: GATEWAY_SECURITY_ENABLED
+            - name: SPRING_DATA_REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: ecommerce-config
+                  key: SPRING_DATA_REDIS_HOST
+            - name: SPRING_DATA_REDIS_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: ecommerce-config
+                  key: SPRING_DATA_REDIS_PORT
+            - name: GATEWAY_RATE_LIMIT_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: ecommerce-config
+                  key: GATEWAY_RATE_LIMIT_ENABLED
+            - name: GATEWAY_RATE_LIMIT_REPLENISH
+              valueFrom:
+                configMapKeyRef:
+                  name: ecommerce-config
+                  key: GATEWAY_RATE_LIMIT_REPLENISH
+            - name: GATEWAY_RATE_LIMIT_CAPACITY
+              valueFrom:
+                configMapKeyRef:
+                  name: ecommerce-config
+                  key: GATEWAY_RATE_LIMIT_CAPACITY
+            - name: GATEWAY_RATE_LIMIT_LOGIN_REPLENISH
+              valueFrom:
+                configMapKeyRef:
+                  name: ecommerce-config
+                  key: GATEWAY_RATE_LIMIT_LOGIN_REPLENISH
+            - name: GATEWAY_RATE_LIMIT_LOGIN_CAPACITY
+              valueFrom:
+                configMapKeyRef:
+                  name: ecommerce-config
+                  key: GATEWAY_RATE_LIMIT_LOGIN_CAPACITY
           startupProbe:
             httpGet:
               path: /actuator/health
