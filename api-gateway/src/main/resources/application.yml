@@ -4,8 +4,15 @@ server:
 spring:
   application:
     name: api-gateway
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
   cloud:
     gateway:
+      filter:
+        request-rate-limiter:
+          enabled: ${GATEWAY_RATE_LIMIT_ENABLED:true}
       globalcors:
         corsConfigurations:
           '[/**]':
@@ -20,26 +27,72 @@ spring:
             allowedHeaders: "*"
             allowCredentials: true
       routes:
+        - id: auth-public
+          uri: ${AUTH_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/v1/auth/login,/api/v1/auth/register
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: ${GATEWAY_RATE_LIMIT_LOGIN_REPLENISH:1}
+                redis-rate-limiter.burstCapacity: ${GATEWAY_RATE_LIMIT_LOGIN_CAPACITY:5}
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@remoteAddressKeyResolver}"
         - id: auth-service
           uri: ${AUTH_SERVICE_URL:http://localhost:8081}
           predicates:
             - Path=/api/v1/auth/**,/api/v1/usuario/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: ${GATEWAY_RATE_LIMIT_REPLENISH:1}
+                redis-rate-limiter.burstCapacity: ${GATEWAY_RATE_LIMIT_CAPACITY:20}
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@remoteAddressKeyResolver}"
         - id: catalogo-service
           uri: ${CATALOGO_SERVICE_URL:http://localhost:8082}
           predicates:
             - Path=/api/v1/producto/**,/api/v1/categoria/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: ${GATEWAY_RATE_LIMIT_REPLENISH:1}
+                redis-rate-limiter.burstCapacity: ${GATEWAY_RATE_LIMIT_CAPACITY:20}
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@remoteAddressKeyResolver}"
         - id: pedidos-service
           uri: ${PEDIDOS_SERVICE_URL:http://localhost:8083}
           predicates:
             - Path=/api/v1/pedido/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: ${GATEWAY_RATE_LIMIT_REPLENISH:1}
+                redis-rate-limiter.burstCapacity: ${GATEWAY_RATE_LIMIT_CAPACITY:20}
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@remoteAddressKeyResolver}"
         - id: pagos-service
           uri: ${PAGOS_SERVICE_URL:http://localhost:8084}
           predicates:
             - Path=/api/v1/pago/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: ${GATEWAY_RATE_LIMIT_REPLENISH:1}
+                redis-rate-limiter.burstCapacity: ${GATEWAY_RATE_LIMIT_CAPACITY:20}
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@remoteAddressKeyResolver}"
         - id: notificaciones-service
           uri: ${NOTIFICACIONES_SERVICE_URL:http://localhost:8085}
           predicates:
             - Path=/api/v1/notificacion/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: ${GATEWAY_RATE_LIMIT_REPLENISH:1}
+                redis-rate-limiter.burstCapacity: ${GATEWAY_RATE_LIMIT_CAPACITY:20}
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@remoteAddressKeyResolver}"
 
 jwt:
   secret: ${JWT_SECRET:change-me-to-a-long-random-secret-key-at-least-32-chars}
