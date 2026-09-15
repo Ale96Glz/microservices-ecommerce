@@ -12,6 +12,7 @@ Michael Nygard (Contexto → Decisión → Consecuencias).
 | [ADR-0005](./adr/ADR-0005-ingress-api-gateway.md) | Exposición del api-gateway mediante Ingress en Kubernetes | Aceptado |
 | [ADR-0006](./adr/ADR-0006-jwt-por-microservicio.md) | Validación JWT dentro de cada microservicio (defensa en profundidad) | Aceptado |
 | [ADR-0007](./adr/ADR-0007-exposicion-puertos-internos.md) | Exposición de puertos internos y red por defecto | Aceptado |
+| [ADR-0008](./adr/ADR-0008-https-ingress.md) | HTTPS con TLS por defecto mediante Ingress | Aceptado |
 
 ## Diagramas C4 (Modelo C4)
 
