@@ -14,6 +14,7 @@ Michael Nygard (Contexto → Decisión → Consecuencias).
 | [ADR-0007](./adr/ADR-0007-exposicion-puertos-internos.md) | Exposición de puertos internos y red por defecto | Aceptado |
 | [ADR-0008](./adr/ADR-0008-https-ingress.md) | HTTPS con TLS por defecto mediante Ingress | Aceptado |
 | [ADR-0009](./adr/ADR-0009-secretos-sealed.md) | Gestión segura de secretos con Kubernetes Sealed Secrets | Aceptado |
+| [ADR-0010](./adr/ADR-0010-rate-limiting-redis.md) | Rate limiting distribuido con Redis en el API Gateway | Aceptado |
 
 ## Diagramas C4 (Modelo C4)
 
