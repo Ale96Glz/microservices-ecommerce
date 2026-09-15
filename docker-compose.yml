@@ -51,6 +51,17 @@ services:
       KAFKA_CLUSTERS_0_NAME: ecommerce
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
 
+  redis:
+    image: redis:7-alpine
+    container_name: ecommerce-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   auth-service:
     build:
       context: .
@@ -160,6 +171,7 @@ services:
       - pedidos-service
       - pagos-service
       - notificaciones-service
+      - redis
     ports:
       - "${API_GATEWAY_PORT:-8080}:8080"
     environment:
@@ -170,6 +182,9 @@ services:
       PAGOS_SERVICE_URL: http://pagos-service:8084
       NOTIFICACIONES_SERVICE_URL: http://notificaciones-service:8085
       GATEWAY_SECURITY_ENABLED: "true"
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      GATEWAY_RATE_LIMIT_ENABLED: "true"
 
 volumes:
   postgres_data:
