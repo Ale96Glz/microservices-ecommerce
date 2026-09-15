@@ -322,7 +322,7 @@ Service interno correspondiente (no están publicados al host).
 - [x] Evitar la exposición directa de los puertos internos (ADR-0007).
 - [x] Configurar HTTPS (ADR-0008, TLS self-signed por Ingress).
 - [x] Gestión segura de secretos (ADR-0009, Kubernetes Sealed Secrets).
-- [ ] Agregar rate limiting.
+- [x] Agregar rate limiting (ADR-0010, RedisRateLimiter en el API Gateway).
 - [ ] Incorporar logs estructurados, métricas y trazabilidad.
 
 ### Fase 4 — Calidad
