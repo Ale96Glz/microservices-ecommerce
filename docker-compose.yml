@@ -59,8 +59,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    ports:
-      - "${AUTH_SERVICE_PORT:-8081}:8081"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/auth_db
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
@@ -79,8 +77,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    ports:
-      - "${CATALOGO_SERVICE_PORT:-8082}:8082"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/catalogo_db
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
@@ -101,8 +97,6 @@ services:
         condition: service_healthy
       catalogo-service:
         condition: service_started
-    ports:
-      - "${PEDIDOS_SERVICE_PORT:-8083}:8083"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/pedidos_db
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
@@ -125,8 +119,6 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
-    ports:
-      - "${PAGOS_SERVICE_PORT:-8084}:8084"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/pagos_db
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
@@ -147,8 +139,6 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
-    ports:
-      - "${NOTIFICACIONES_SERVICE_PORT:-8085}:8085"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/notificaciones_db
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
