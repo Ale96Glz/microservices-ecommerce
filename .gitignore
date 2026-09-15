@@ -33,6 +33,7 @@ k8s/*-secret.yaml
 *.pem
 *.p12
 *.jks
+certs/
 
 # Logs
 *.log

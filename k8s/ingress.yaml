@@ -10,8 +10,13 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts:
+        - ecommerce.local
+      secretName: ecommerce-tls
   rules:
-    - http:
+    - host: ecommerce.local
+      http:
         paths:
           - path: /
             pathType: Prefix

@@ -114,12 +114,12 @@ URLs principales:
 
 | Recurso | URL |
 |---|---|
-| API Gateway | http://localhost:8080 |
-| Auth | http://localhost:8081 |
-| Catálogo | http://localhost:8082 |
-| Pedidos | http://localhost:8083 |
-| Pagos | http://localhost:8084 |
-| Notificaciones | http://localhost:8085 |
+| API Gateway (única entrada) | http://localhost:8080 |
+| Auth | interno (red de Compose, `auth-service:8081`) |
+| Catálogo | interno (red de Compose, `catalogo-service:8082`) |
+| Pedidos | interno (red de Compose, `pedidos-service:8083`) |
+| Pagos | interno (red de Compose, `pagos-service:8084`) |
+| Notificaciones | interno (red de Compose, `notificaciones-service:8085`) |
 | Kafka UI | http://localhost:8089 |
 
 Para detener el entorno:
@@ -194,17 +194,73 @@ Componentes) están disponibles en [`docs/`](./docs/adr/README.md).
 
 ## Documentación de API
 
-La documentación Swagger está disponible en:
+La documentación Swagger está disponible en cada servicio, pero en el entorno
+por defecto **solo el API Gateway publica puerto al host**. Para ver el Swagger
+de un microservicio interno hay que exponerlo puntualmente:
 
-```text
-http://localhost:<puerto>/swagger-ui.html
+```bash
+# Ejemplo: Swagger de catálogo
+kubectl port-forward svc/catalogo-service -n ecommerce 8082:8080
 ```
-
-Por ejemplo:
 
 ```text
 http://localhost:8082/swagger-ui.html
 ```
+
+En Docker Compose local se puede habilitar temporalmente el puerto
+(`CATALOGO_SERVICE_PORT=8082`) o entrar al contenedor:
+
+```bash
+docker exec -it ecommerce-catalogo sh
+```
+
+## HTTPS (TLS por defecto en el Ingress)
+
+El Ingress termina TLS mediante un Secret `ecommerce-tls` creado con
+`scripts/gen-tls.ps1` (CA propia + certificado para `ecommerce.local`, ver
+ADR-0008). Para regenerar el certificado:
+
+```powershell
+.\scripts\gen-tls.ps1 ecommerce.local
+```
+
+El certificado/CA no se versiona en git (`certs/` ignorado); solo el script.
+
+Para consumir por HTTPS desde el navegador sin advertencias:
+
+1. Agregar `ecommerce.local` al archivo `hosts` apuntando a la IP del
+   ingress-nginx:
+
+   ```text
+   # C:\Windows\System32\drivers\etc\hosts
+   <IP-del-LoadBalancer>  ecommerce.local
+   ```
+
+   En la mayoría de entornos Docker Desktop esa IP se obtiene con:
+
+   ```bash
+   kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+   ```
+
+2. Confiar en la CA de desarrollo en el navegador (importar
+   `certs/ca-ecommerce.crt`).
+
+3. Acceder:
+
+   ```text
+   https://ecommerce.local
+   ```
+
+Para pruebas por línea de comandos sin modificar el `hosts`:
+
+```bash
+curl --cacert certs/ca-ecommerce.crt --resolve ecommerce.local:443:<IP> https://ecommerce.local/actuator/health
+```
+
+> Nota: en algunos entornos (Docker Desktop/WSL2) el `LoadBalancer` no es
+> alcanzable directo desde el host; usar `kubectl port-forward
+> svc/ingress-nginx-controller -n ingress-nginx 8443:443` y apuntar
+> `ecommerce.local` a `127.0.0.1` en el `hosts`.
 
 ## Health checks
 
@@ -216,8 +272,9 @@ http://localhost:<puerto>/actuator/health/liveness
 http://localhost:<puerto>/actuator/health/readiness
 ```
 
-Estos endpoints serán utilizados más adelante por las `readinessProbe` y
-`livenessProbe` de Kubernetes.
+Estos endpoints son usados por las `startupProbe`, `readinessProbe` y
+`livenessProbe` de Kubernetes. En Kubernetes se consultan a través del
+Service interno correspondiente (no están publicados al host).
 
 ## Hoja de ruta
 
@@ -246,7 +303,8 @@ Estos endpoints serán utilizados más adelante por las `readinessProbe` y
 
 - [x] Validar JWT también dentro de cada microservicio (ADR-0006, módulo `common-security`).
 - [x] Evitar la exposición directa de los puertos internos (ADR-0007).
-- [ ] Configurar HTTPS y gestión segura de secretos.
+- [x] Configurar HTTPS (ADR-0008, TLS self-signed por Ingress).
+- [ ] Gestión segura de secretos.
 - [ ] Agregar rate limiting.
 - [ ] Incorporar logs estructurados, métricas y trazabilidad.
 
