@@ -35,6 +35,9 @@ k8s/*-secret.yaml
 *.jks
 certs/
 
+# Herramientas locales descargadas (kubeseal, etc.)
+tools/
+
 # Logs
 *.log
 logs/

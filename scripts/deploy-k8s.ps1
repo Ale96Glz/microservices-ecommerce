@@ -106,16 +106,18 @@ try {
     }
 
     Write-Step 4 "Preparando las credenciales"
-    & kubectl get secret ecommerce-secrets -n $namespace -o name 2>$null | Out-Null
-    $secretExists = $LASTEXITCODE -eq 0
+    $sealedFile = Join-Path $k8sPath "sealed-ecommerce-secrets.yaml"
+    $sealedExists = Test-Path $sealedFile
 
-    if ($secretExists) {
-        $encodedDbUser = kubectl get secret ecommerce-secrets -n $namespace -o jsonpath='{.data.POSTGRES_USER}'
-        $dbUser = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($encodedDbUser))
-        Write-Host "El Secret ecommerce-secrets ya existe; se conservará." -ForegroundColor Yellow
-        Write-Host "Se usará el usuario almacenado en el Secret para verificar PostgreSQL." -ForegroundColor DarkGray
+    if ($sealedExists) {
+        Write-Host "Se aplicará el SealedSecret versionado (ADR-0009)." -ForegroundColor Green
+        Write-Host "El Secret real lo descifra el controller sealed-secrets." -ForegroundColor DarkGray
+        Invoke-Kubectl @("apply", "-f", $sealedFile)
+        Write-Host "Esperando a que el controller genere el Secret real..." -ForegroundColor Cyan
+        Start-Sleep -Seconds 8
     }
     else {
+        Write-Host "No se encontró $sealedFile. Usa scripts/seal-ecommerce-secrets.ps1 para sellarlo." -ForegroundColor Yellow
         $dbUser = Read-Host "Usuario de PostgreSQL [ecommerce]"
         if ([string]::IsNullOrWhiteSpace($dbUser)) {
             $dbUser = "ecommerce"
@@ -143,6 +145,14 @@ try {
             throw "No se pudo crear o actualizar ecommerce-secrets."
         }
     }
+
+    & kubectl get secret ecommerce-secrets -n $namespace -o name 2>$null | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw "No se pudo obtener el Secret real ecommerce-secrets (¿está el controller sealed-secrets corriendo?)."
+    }
+    $encodedDbUser = kubectl get secret ecommerce-secrets -n $namespace -o jsonpath='{.data.POSTGRES_USER}'
+    $dbUser = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($encodedDbUser))
+    Write-Host "Se usará el usuario almacenado en el Secret para verificar PostgreSQL." -ForegroundColor DarkGray
 
     Write-Step 5 "Desplegando PostgreSQL"
     if (-not (Confirm-Step "¿Desplegar PostgreSQL ahora?")) {

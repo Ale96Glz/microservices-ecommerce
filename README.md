@@ -160,12 +160,29 @@ Actualmente ejecuta:
 1. Validación del contexto y los nodos.
 2. Creación del namespace `ecommerce`.
 3. Aplicación del `ConfigMap`.
-4. Creación del `Secret` si todavía no existe.
+4. Aplicación del `SealedSecret` versionado y verificación del Secret real.
 5. Despliegue de PostgreSQL y su volumen persistente.
 6. Verificación de las cinco bases de datos.
 
-Si `ecommerce-secrets` ya existe, el script lo conserva para no cambiar
-accidentalmente la contraseña de una base de datos existente.
+Los secretos (`POSTGRES_USER`, `POSTGRES_PASSWORD`, `JWT_SECRET`) están
+**cifrados con Kubernetes Sealed Secrets** (ADR-0009): el archivo
+`k8s/sealed-ecommerce-secrets.yaml` se versiona en git y el controller
+`sealed-secrets` (namespace `kube-system`) lo descifra al aplicar. Las
+credenciales nunca viajan en claro por el repositorio.
+
+La **primera vez** de un clúster (o tras borrarlo) hay que instalar el
+controller antes de aplicar el SealedSecret:
+
+```bash
+kubectl apply -f https://github.com/bitnami/sealed-secrets/releases/download/v0.40.0/controller.yaml
+```
+
+- Para **regenerar/rotar** el SealedSecret tras actualizar el Secret en el
+  cluster: `./scripts/seal-ecommerce-secrets.ps1`.
+- Si `ecommerce-secrets` no existe o fue borrado, el controller lo recrea desde
+  el SealedSecret automáticamente.
+- El binario `kubeseal` (solo para el operador, no se versiona) va en
+  `tools/kubeseal/`; si falta, `seal-ecommerce-secrets.ps1` lo reclama.
 
 ## Autenticación y flujo básico
 
@@ -304,7 +321,7 @@ Service interno correspondiente (no están publicados al host).
 - [x] Validar JWT también dentro de cada microservicio (ADR-0006, módulo `common-security`).
 - [x] Evitar la exposición directa de los puertos internos (ADR-0007).
 - [x] Configurar HTTPS (ADR-0008, TLS self-signed por Ingress).
-- [ ] Gestión segura de secretos.
+- [x] Gestión segura de secretos (ADR-0009, Kubernetes Sealed Secrets).
 - [ ] Agregar rate limiting.
 - [ ] Incorporar logs estructurados, métricas y trazabilidad.
 
