@@ -244,7 +244,7 @@ Estos endpoints serán utilizados más adelante por las `readinessProbe` y
 
 ### Fase 3 — Seguridad y operación
 
-- [ ] Validar JWT también dentro de cada microservicio.
+- [x] Validar JWT también dentro de cada microservicio (ADR-0006, módulo `common-security`).
 - [ ] Evitar la exposición directa de los puertos internos.
 - [ ] Configurar HTTPS y gestión segura de secretos.
 - [ ] Agregar rate limiting.
