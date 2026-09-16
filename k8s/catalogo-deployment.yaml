@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: catalogo-service
-          image: ghcr.io/ale96glz/microservices-ecommerce/catalogo-service:1.0.5
+          image: ghcr.io/ale96glz/microservices-ecommerce/catalogo-service:1.0.6
           imagePullPolicy: Always
           ports:
             - name: http
@@ -46,6 +46,16 @@ spec:
                   key: JWT_SECRET
             - name: JWT_FILTER_ENABLED
               value: "true"
+            - name: ZIPKIN_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: ecommerce-config
+                  key: ZIPKIN_ENDPOINT
+            - name: TRACING_SAMPLING_PROBABILITY
+              valueFrom:
+                configMapKeyRef:
+                  name: ecommerce-config
+                  key: TRACING_SAMPLING_PROBABILITY
           startupProbe:
             httpGet:
               path: /actuator/health

@@ -25,4 +25,12 @@ resources:
   - notificaciones-service.yaml
   - api-gateway-deployment.yaml
   - api-gateway-service.yaml
+  - zipkin-deployment.yaml
+  - zipkin-service.yaml
+  - prometheus-configmap.yaml
+  - prometheus-deployment.yaml
+  - prometheus-service.yaml
+  - grafana-provisioning-configmap.yaml
+  - grafana-deployment.yaml
+  - grafana-service.yaml
   - ingress.yaml
