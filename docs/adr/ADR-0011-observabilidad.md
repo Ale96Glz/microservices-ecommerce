@@ -32,19 +32,21 @@ La Agenda Fase 3 exige incorporar los tres. Se necesita:
    - **Métricas**: `micrometer-registry-prometheus` + exposición
      `/actuator/prometheus`. Prometheus scrapea los servicios y Grafana
      grafica.
-   - **Trazabilidad**: `micrometer-tracing-bridge-brave` +
-     `zipkin-reporter-brave` (Brave es el puente moderno; **Sleuth quedó
-     deprecado/retirado**, no aplica a Boot 3.3). Zipkin recibe los spans.
-   - **Logs estructurados**: soporte **nativo de Spring Boot 3.3**
-     (`logging.structured.format.console: logstash`) → NO requiere
-     `logstash-logback-encoder`. El `traceId`/`spanId` se inyectan en el log
-     por el puente de tracing.
+- **Trazabilidad**: `micrometer-tracing-bridge-brave` +
+      `zipkin-reporter-brave` (Brave es el puente moderno; **Sleuth quedó
+      deprecado/retirado**, no aplica a Boot 3.3). Zipkin recibe los spans.
+   - **Logs estructurados**: `logstash-logback-encoder` con un `logback-spring.xml`
+      compartido en el módulo común (Boot 3.3 **NO** trae structured logging
+      nativo: llega en Boot 3.4 con `logging.structured.format.console`). El
+      encoder incluye `application`, `traceId` y `spanId` en el JSON; el
+      `traceId`/`spanId` los inyecta el puente de tracing vía MDC.
    - **Centralización**: el módulo común aporta dependencias; la config va por
-     env vars (`ZIPKIN_ENDPOINT`, `TRACING_SAMPLING_PROBABILITY`,
-     `PROMETHEUS_ENABLED`) reutilizando el patrón de `common-security`.
+      env vars (`ZIPKIN_ENDPOINT`, `TRACING_SAMPLING_PROBABILITY`,
+      `PROMETHEUS_ENABLED`) reutilizando el patrón de `common-security`.
 2. **logstash-logback-encoder manual + logback.xml en cada servicio**:
    - Logs JSON buenos, pero **dependencia y XML duplicados en 6 servicios**, y no
-     aporta metricas/trazas (mismas dependencias extra).
+      aporta metricas/trazas (mismas dependencias extra). (Se descarta el
+      duplicado; el JSON lo centraliza el módulo común.)
 3. **Stack comercial/de nodos (SaaS tracing, New Relic, Datadog)**:
    - Rápido, pero introduce cuenta externa y credenciales; no aplica al
      clúster local Kind.
@@ -56,16 +58,18 @@ La Agenda Fase 3 exige incorporar los tres. Se necesita:
 1. **Crear el módulo Maven `common-observability`** que agrupa las dependencias
    de observabilidad:
    - `micrometer-registry-prometheus`.
-   - `micrometer-tracing-bridge-brave`.
+- `micrometer-tracing-bridge-brave`.
    - `zipkin-reporter-brave`.
+   - `logstash-logback-encoder` + `logback-spring.xml` compartido (boot
+      detecta el archivo desde el classpath del módulo común).
    - Un `@AutoConfiguration` con `@ConditionalOnProperty` para activar/desactivar
-     el puente de tracing por env, siguiendo el patrón de `common-security`.
+      el puente de tracing por env, siguiendo el patrón de `common-security`.
    - Se registra en el pom padre (modules + dependencyManagement) y cada
-     microservicio solo agrega `<dependency>common-observability</dependency>`.
+      microservicio solo agrega `<dependency>common-observability</dependency>`.
 2. **Config por aplicación** (en `application.yml` de cada servicio, con
-   defaults y sobreescritura por env):
-   - `logging.structured.format.console: logstash` → logs **JSON line-delimited**
-     en stdout (apto para Docker/K8s).
+    defaults y sobreescritura por env):
+   - `logback-spring.xml` (del módulo común) → logs **JSON line-delimited**
+      en stdout (apto para Docker/K8s) con `application`, `traceId`, `spanId`.
    - `management.endpoints.web.exposure.include: health,info,prometheus` →
      endpoint Prometheus.
    - `management.tracing.sampling.probability: ${TRACING_SAMPLING_PROBABILITY:1.0}`
@@ -91,8 +95,9 @@ La Agenda Fase 3 exige incorporar los tres. Se necesita:
 
 - **Observabilidad transversal de un clic**: logs JSON, métricas Prometheus y
   trazas Zipkin desde el mismo stack; el `traceId` aparece en logs y spans.
-- **Correlación distribuida**: un pedido se sigue por `traceId` desde el gateway
-  hasta notificaciones (eventos Kafka incluidos).
+- **Correlación distribuida**: un pedido se sigue por `traceId` a lo largo de la
+  cadena HTTP síncrona (gateway → auth → pedidos → catálogo) con un solo
+  `traceId` en logs y spans.
 - **Base para SLA/dashboards**: las métricas HTTP/JVM existen desde el día uno;
   agregar métricas de negocio luego es trivial (registry ya publica).
 - **Sin dependencia externa**: todo corre en el clúster/compose local.
@@ -105,8 +110,12 @@ La Agenda Fase 3 exige incorporar los tres. Se necesita:
 - **Overhead de sampling**: con `probability=1.0` en dev todo se muestra; en
   producción se baja (env) para no saturar Zipkin.
 - **Logs JSON menos legibles a mano**: para consola se puede alternar a texto
-  con `logging.structured.format.console` vacío en dev puntual.
+   con otro `logback-spring.xml`/profile en dev puntual.
 - **Zipkin en memoria**: no hay persistencia de trazas (solo dev). Deuda para
-  producción (Elasticsearch/Tempo + persistencia).
+   producción (Elasticsearch/Tempo + persistencia).
+- **Eventos Kafka por fuera de la traza HTTP**: el `traceId` del pedido no viaja
+   en el mensaje Kafka; cada consumidor genera trace propio. La propagación
+   através de mensajería exige instrumentar producer/consumer con Brave
+   `KafkaTracing`; queda como mejora posterior.
 - **Grafana sin usuarios/config inicial**: solo datasource Prometheus; paneles a
   crear según necesidad.
