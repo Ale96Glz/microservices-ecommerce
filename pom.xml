@@ -20,6 +20,7 @@
     <modules>
         <module>common-events</module>
         <module>common-security</module>
+        <module>common-observability</module>
         <module>api-gateway</module>
         <module>auth-service</module>
         <module>catalogo-service</module>
@@ -50,6 +51,11 @@
             <dependency>
                 <groupId>com.aosorio.ecommerce</groupId>
                 <artifactId>common-security</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.aosorio.ecommerce</groupId>
+                <artifactId>common-observability</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>
