@@ -1,0 +1,29 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'api-gateway'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['api-gateway:8080']
+  - job_name: 'auth-service'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['auth-service:8081']
+  - job_name: 'catalogo-service'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['catalogo-service:8082']
+  - job_name: 'pedidos-service'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['pedidos-service:8083']
+  - job_name: 'pagos-service'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['pagos-service:8084']
+  - job_name: 'notificaciones-service'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['notificaciones-service:8085']
