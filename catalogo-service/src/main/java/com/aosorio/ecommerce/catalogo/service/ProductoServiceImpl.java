@@ -32,11 +32,11 @@ public class ProductoServiceImpl implements ProductoService {
         log.info("Iniciando la creacion del producto: {}", productoRequestDTO.getNombre());
 
         if (productoRepository.existsByNombre(productoRequestDTO.getNombre())) {
-            throw new RuntimeException("Ya existe un producto con el nombre: " + productoRequestDTO.getNombre());
+            throw new ResourceInUseException("Ya existe un producto con el nombre: " + productoRequestDTO.getNombre());
         }
 
         Categoria categoria = categoriaRepository.findById(productoRequestDTO.getCategoriaId())
-                .orElseThrow(() -> new RuntimeException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "No existe la categoria con id: " + productoRequestDTO.getCategoriaId()));
 
         Producto producto = productoMapper.toEntity(productoRequestDTO, categoria);
@@ -50,10 +50,10 @@ public class ProductoServiceImpl implements ProductoService {
     @Transactional
     public ProductoResponseDTO actualizar(Long id, ProductoRequestDTO productoRequestDTO) {
         Producto producto = productoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("No se encontró el producto con id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el producto con id: " + id));
 
         Categoria categoria = categoriaRepository.findById(productoRequestDTO.getCategoriaId())
-                .orElseThrow(() -> new RuntimeException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "No existe la categoria con id: " + productoRequestDTO.getCategoriaId()));
 
         producto.setNombre(productoRequestDTO.getNombre());
@@ -75,7 +75,7 @@ public class ProductoServiceImpl implements ProductoService {
     @Transactional
     public void eliminar(Long id) {
         Producto producto = productoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("No se encontró el producto con id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el producto con id: " + id));
         productoRepository.delete(producto);
         log.info("Se ha eliminado el producto: {}", producto.getId());
     }
@@ -134,7 +134,7 @@ public class ProductoServiceImpl implements ProductoService {
     @Transactional(readOnly = true)
     public ProductoResponseDTO obtenerPorId(Long id) {
         Producto producto = productoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("No se encontró el producto con id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el producto con id: " + id));
         log.info("Se ha obtenido el producto: {}", producto.getId());
         return productoMapper.toResponseDto(producto);
     }
