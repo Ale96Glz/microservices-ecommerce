@@ -163,7 +163,7 @@ class PedidoServiceImplTest {
         when(pedidoRepository.save(any(Pedido.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         PedidoResponseDTO respuesta = pedidoService.procesarResultadoPago(
-                new PaymentProcessedEvent(1L, 5L, 9L, new BigDecimal("100.00"), "PROCESADO", Instant.now()));
+                new PaymentProcessedEvent(1L, 5L, 9L, new BigDecimal("100.00"), "PROCESADO", null, Instant.now()));
 
         assertThat(respuesta.estado()).isEqualTo("PAGADO");
     }
@@ -174,7 +174,7 @@ class PedidoServiceImplTest {
         when(pedidoRepository.save(any(Pedido.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         PedidoResponseDTO respuesta = pedidoService.procesarResultadoPago(
-                new PaymentProcessedEvent(1L, 5L, 9L, new BigDecimal("100.00"), "RECHAZADO", Instant.now()));
+                new PaymentProcessedEvent(1L, 5L, 9L, new BigDecimal("100.00"), "RECHAZADO", null, Instant.now()));
 
         ArgumentCaptor<OutboxEvent> outboxCaptor = ArgumentCaptor.forClass(OutboxEvent.class);
         verify(outboxEventRepository).save(outboxCaptor.capture());
@@ -188,7 +188,7 @@ class PedidoServiceImplTest {
         when(pedidoRepository.findWithItemsById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> pedidoService.procesarResultadoPago(
-                new PaymentProcessedEvent(1L, 99L, 9L, new BigDecimal("100.00"), "PROCESADO", Instant.now())))
+                new PaymentProcessedEvent(1L, 99L, 9L, new BigDecimal("100.00"), "PROCESADO", null, Instant.now())))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
