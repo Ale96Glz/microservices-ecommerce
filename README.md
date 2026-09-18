@@ -40,6 +40,7 @@ catálogo, pedidos, pagos y notificaciones mediante APIs REST.
 - Transactional Outbox: los eventos (OrderCreated, PaymentProcessed, RestockRequested) se guardan en una tabla interna en la misma transacción del dato de negocio y un publicador los envía a Kafka.
 - Reintentos con backoff y Dead Letter Topics (DLT) para eventos Kafka fallidos.
 - Health checks compatibles con Kubernetes.
+- Arranque orquestado en Compose: el gateway espera a auth-service y redis sanos (healthchecks) antes de aceptar tráfico (ADR-0015).
 
 ## Arquitectura de eventos
 
@@ -319,10 +320,14 @@ compensación**: un segundo pedido con total superior al umbral de aprobación
 compensación por outbox (`restock-requested`) restaura el stock en catálogo.
 La notificación del pago rechazado incluye el motivo (`motivoRechazo`); el
 `POST /api/v1/pago` responde siempre `201` cuando el intento se registra
-(recurso creado) y el resultado se lee del cuerpo. Detalles de la decisión en
+(recurso creado) y el resultado se lee del cuerpo. Desde el arranque, el
+gateway solo acepta tráfico cuando auth-service y redis están sanos
+(healthchecks en Compose), evitando la carrera de arranque. Detalles de la
+decisión en
 [ADR-0012](./docs/adr/ADR-0012-ci-y-smoke-test.md),
-[ADR-0013](./docs/adr/ADR-0013-compensacion-stock-saga-outbox.md) y
-[ADR-0014](./docs/adr/ADR-0014-contrato-http-pago-201-motivechazo.md).
+[ADR-0013](./docs/adr/ADR-0013-compensacion-stock-saga-outbox.md),
+[ADR-0014](./docs/adr/ADR-0014-contrato-http-pago-201-motivechazo.md) y
+[ADR-0015](./docs/adr/ADR-0015-arranque-ordenado-gateway-auth.md).
 
 ## Hoja de ruta
 
