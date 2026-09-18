@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PaymentProcessedEventContractTest {
 
     public static final PaymentProcessedEvent EVENTO = new PaymentProcessedEvent(
-            10L, 1L, 2L, new BigDecimal("250.50"), "PROCESADO", Instant.parse("2026-09-18T10:05:00Z"));
+            10L, 1L, 2L, new BigDecimal("250.50"), "PROCESADO", null, Instant.parse("2026-09-18T10:05:00Z"));
 
     private static final String CONTRATO = "contracts/payment-processed-event.json";
 

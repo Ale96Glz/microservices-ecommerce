@@ -59,6 +59,8 @@ class PagoServiceImplTest {
                 .usuarioId(usuarioId)
                 .monto(monto)
                 .estado(Pago.EstadoPago.valueOf(estado))
+                .motivoRechazo("RECHAZADO".equals(estado)
+                        ? "Monto excede el máximo aprobado (5000.00)" : null)
                 .fechaProcesado(LocalDateTime.now())
                 .build();
     }
@@ -72,6 +74,7 @@ class PagoServiceImplTest {
                 PagoRequestDTO.builder().pedidoId(5L).monto(new BigDecimal("100.00")).build());
 
         assertThat(respuesta.estado()).isEqualTo("PROCESADO");
+        assertThat(respuesta.motivoRechazo()).isNull();
         ArgumentCaptor<OutboxEvent> captor = ArgumentCaptor.forClass(OutboxEvent.class);
         verify(outboxEventRepository).save(captor.capture());
         assertThat(captor.getValue().getTipoEvento()).isEqualTo("PAYMENT_PROCESSED");
@@ -80,7 +83,7 @@ class PagoServiceImplTest {
     }
 
     @Test
-    void procesarPagoSobreElLimiteSeRechaza() {
+    void procesarPagoSobreElLimiteSeRechazaConMotivo() {
         when(pagoRepository.existsByPedidoId(5L)).thenReturn(false);
         when(pagoRepository.save(any(Pago.class))).thenReturn(pago(1L, 5L, 9L, new BigDecimal("9999.00"), "RECHAZADO"));
 
@@ -88,6 +91,17 @@ class PagoServiceImplTest {
                 PagoRequestDTO.builder().pedidoId(5L).monto(new BigDecimal("9999.00")).build());
 
         assertThat(respuesta.estado()).isEqualTo("RECHAZADO");
+        assertThat(respuesta.motivoRechazo()).isEqualTo("Monto excede el máximo aprobado (5000.00)");
+
+        ArgumentCaptor<Pago> pagoCaptor = ArgumentCaptor.forClass(Pago.class);
+        verify(pagoRepository).save(pagoCaptor.capture());
+        assertThat(pagoCaptor.getValue().getEstado()).isEqualTo(Pago.EstadoPago.RECHAZADO);
+        assertThat(pagoCaptor.getValue().getMotivoRechazo()).contains("máximo aprobado");
+
+        ArgumentCaptor<OutboxEvent> outboxCaptor = ArgumentCaptor.forClass(OutboxEvent.class);
+        verify(outboxEventRepository).save(outboxCaptor.capture());
+        assertThat(outboxCaptor.getValue().getPayload()).contains("RECHAZADO");
+        assertThat(outboxCaptor.getValue().getPayload()).contains("máximo aprobado");
     }
 
     @Test
