@@ -102,11 +102,17 @@ public class PagoServiceImpl implements PagoService {
                 ? Pago.EstadoPago.RECHAZADO
                 : Pago.EstadoPago.PROCESADO;
 
+        String motivoRechazo = null;
+        if (estado == Pago.EstadoPago.RECHAZADO) {
+            motivoRechazo = "Monto excede el máximo aprobado (" + montoMaximoAprobado + ")";
+        }
+
         Pago pago = Pago.builder()
                 .pedidoId(pedidoId)
                 .usuarioId(usuarioId)
                 .monto(monto)
                 .estado(estado)
+                .motivoRechazo(motivoRechazo)
                 .build();
 
         Pago guardado = pagoRepository.save(pago);
@@ -118,6 +124,7 @@ public class PagoServiceImpl implements PagoService {
                 guardado.getUsuarioId(),
                 guardado.getMonto(),
                 guardado.getEstado().name(),
+                guardado.getMotivoRechazo(),
                 guardado.getFechaProcesado().toInstant(ZoneOffset.UTC)
         );
 

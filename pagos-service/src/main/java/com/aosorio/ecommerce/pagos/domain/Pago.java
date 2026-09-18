@@ -50,6 +50,8 @@ public class Pago {
     @Column(nullable = false)
     private EstadoPago estado;
 
+    private String motivoRechazo;
+
     @CreationTimestamp
     @Column(updatable = false, nullable = false)
     private LocalDateTime fechaProcesado;

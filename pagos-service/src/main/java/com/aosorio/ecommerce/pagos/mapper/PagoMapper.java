@@ -14,6 +14,7 @@ public class PagoMapper {
                 pago.getUsuarioId(),
                 pago.getMonto(),
                 pago.getEstado() != null ? pago.getEstado().name() : null,
+                pago.getMotivoRechazo(),
                 pago.getFechaProcesado()
         );
     }
