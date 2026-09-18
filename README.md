@@ -328,6 +328,6 @@ Service interno correspondiente (no están publicados al host).
 ### Fase 4 — Calidad
 
 - [x] Agregar pruebas unitarias y de integración.
-- [ ] Añadir pruebas de contrato entre servicios.
+- [x] Añadir pruebas de contrato entre servicios.
 - [ ] Automatizar smoke tests en CI.
 - [ ] Documentar escenarios completos de compra.
