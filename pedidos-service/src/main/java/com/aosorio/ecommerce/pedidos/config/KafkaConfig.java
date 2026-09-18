@@ -55,6 +55,7 @@ public class KafkaConfig {
         props.put(JsonDeserializer.TRUSTED_PACKAGES, "com.aosorio.ecommerce.events");
         props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, defaultType.getName());
         props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false);
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         return props;
     }
 
