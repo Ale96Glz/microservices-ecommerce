@@ -92,6 +92,7 @@ services:
       - grafana_data:/var/lib/grafana
 
   auth-service:
+    image: ${IMAGE_PREFIX:-ghcr.io/ale96glz/microservices-ecommerce}/auth-service:${IMAGE_VERSION:-latest}
     build:
       context: .
       dockerfile: auth-service/Dockerfile
@@ -112,6 +113,7 @@ services:
       TRACING_SAMPLING_PROBABILITY: "1.0"
 
   catalogo-service:
+    image: ${IMAGE_PREFIX:-ghcr.io/ale96glz/microservices-ecommerce}/catalogo-service:${IMAGE_VERSION:-latest}
     build:
       context: .
       dockerfile: catalogo-service/Dockerfile
@@ -130,6 +132,7 @@ services:
       TRACING_SAMPLING_PROBABILITY: "1.0"
 
   pedidos-service:
+    image: ${IMAGE_PREFIX:-ghcr.io/ale96glz/microservices-ecommerce}/pedidos-service:${IMAGE_VERSION:-latest}
     build:
       context: .
       dockerfile: pedidos-service/Dockerfile
@@ -156,6 +159,7 @@ services:
       TRACING_SAMPLING_PROBABILITY: "1.0"
 
   pagos-service:
+    image: ${IMAGE_PREFIX:-ghcr.io/ale96glz/microservices-ecommerce}/pagos-service:${IMAGE_VERSION:-latest}
     build:
       context: .
       dockerfile: pagos-service/Dockerfile
@@ -178,6 +182,7 @@ services:
       TRACING_SAMPLING_PROBABILITY: "1.0"
 
   notificaciones-service:
+    image: ${IMAGE_PREFIX:-ghcr.io/ale96glz/microservices-ecommerce}/notificaciones-service:${IMAGE_VERSION:-latest}
     build:
       context: .
       dockerfile: notificaciones-service/Dockerfile
@@ -200,6 +205,7 @@ services:
       TRACING_SAMPLING_PROBABILITY: "1.0"
 
   api-gateway:
+    image: ${IMAGE_PREFIX:-ghcr.io/ale96glz/microservices-ecommerce}/api-gateway:${IMAGE_VERSION:-latest}
     build:
       context: .
       dockerfile: api-gateway/Dockerfile

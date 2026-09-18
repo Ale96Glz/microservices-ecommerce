@@ -1,0 +1,79 @@
+name: Smoke test (E2E)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Tag de las imagenes en GHCR (ej. 1.0.6 o latest)"
+        required: false
+        default: "latest"
+        type: string
+      registry:
+        description: "Prefijo del registro de imagenes"
+        required: false
+        default: "ghcr.io/ale96glz/microservices-ecommerce"
+        type: string
+  workflow_run:
+    workflows: ["Release images"]
+    types: ["completed"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smoke
+  cancel-in-progress: false
+
+env:
+  IMAGE_PREFIX: ghcr.io/ale96glz/microservices-ecommerce
+  IMAGE_VERSION: latest
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+            REGISTRY="${{ inputs.registry }}"
+          else
+            VERSION="latest"
+            REGISTRY="${{ env.IMAGE_PREFIX }}"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "registry=$REGISTRY" >> "$GITHUB_OUTPUT"
+          echo "Smoke contra $REGISTRY/*:$VERSION"
+
+      - name: Descargar imagenes publicadas
+        run: >
+          IMAGE_PREFIX="${{ steps.version.outputs.registry }}"
+          IMAGE_VERSION="${{ steps.version.outputs.version }}"
+          docker compose pull
+          postgres kafka zipkin redis
+          auth-service catalogo-service pedidos-service pagos-service
+          notificaciones-service api-gateway
+
+      - name: Levantar el stack de la aplicacion
+        run: >
+          IMAGE_PREFIX="${{ steps.version.outputs.registry }}"
+          IMAGE_VERSION="${{ steps.version.outputs.version }}"
+          docker compose up -d --no-build
+          postgres kafka zipkin redis
+          auth-service catalogo-service pedidos-service pagos-service
+          notificaciones-service api-gateway
+
+      - name: Ejecutar smoke test E2E
+        run: |
+          chmod +x scripts/smoke-test.sh
+          ./scripts/smoke-test.sh
+
+      - name: Logs de todos los servicios (solo si falla)
+        if: failure()
+        run: docker compose logs --tail=200
+
+      - name: Apagar y limpiar el stack
+        if: always()
+        run: docker compose down -v -t 30
