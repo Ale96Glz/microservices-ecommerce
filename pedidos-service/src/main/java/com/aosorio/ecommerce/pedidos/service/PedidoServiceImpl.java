@@ -2,6 +2,7 @@ package com.aosorio.ecommerce.pedidos.service;
 
 import com.aosorio.ecommerce.events.OrderCreatedEvent;
 import com.aosorio.ecommerce.events.PaymentProcessedEvent;
+import com.aosorio.ecommerce.events.RestockRequestedEvent;
 import com.aosorio.ecommerce.pedidos.client.AuthClient;
 import com.aosorio.ecommerce.pedidos.client.CatalogoClient;
 import com.aosorio.ecommerce.pedidos.client.ProductoCatalogoDTO;
@@ -26,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 
@@ -86,7 +88,7 @@ public class PedidoServiceImpl implements PedidoService {
         try {
             outboxEventRepository.save(OutboxEvent.builder()
                     .agregadoId(guardado.getId())
-                    .tipoEvento("ORDER_CREATED")
+                    .tipoEvento(OutboxEvent.TIPO_ORDER_CREATED)
                     .payload(objectMapper.writeValueAsString(event))
                     .estado(OutboxEvent.EstadoOutbox.PENDIENTE)
                     .build());
@@ -109,12 +111,11 @@ public class PedidoServiceImpl implements PedidoService {
                     "No se puede cancelar el pedido " + id + " porque está en estado " + pedido.getEstado());
         }
 
-        pedido.getItems().forEach(item ->
-                catalogoClient.reponerStock(pedido.getUsuarioId(), item.getProductoId(), item.getCantidad()));
+        encolarCompensacionStock(pedido);
 
         pedido.setEstado(Pedido.EstadoPedido.CANCELADO);
         Pedido cancelado = pedidoRepository.save(pedido);
-        log.info("Se ha cancelado el pedido {} y su stock liberado", cancelado.getId());
+        log.info("Se ha cancelado el pedido {} y su restock encolado para compensacion", cancelado.getId());
         return pedidoMapper.toResponseDto(cancelado);
     }
 
@@ -136,9 +137,9 @@ public class PedidoServiceImpl implements PedidoService {
             log.info("El pedido {} ha sido marcado como PAGADO", pedido.getId());
         } else if ("RECHAZADO".equals(event.estado())) {
             estadoSolicitado = Pedido.EstadoPedido.CANCELADO;
-            pedido.getItems().forEach(item ->
-                    catalogoClient.reponerStock(pedido.getUsuarioId(), item.getProductoId(), item.getCantidad()));
-            log.info("El pedido {} ha sido CANCELADO por rechazo de pago y su stock liberado", pedido.getId());
+            encolarCompensacionStock(pedido);
+            log.info("El pedido {} ha sido CANCELADO por rechazo de pago y su restock encolado para compensacion",
+                    pedido.getId());
         }
 
         pedido.setEstado(estadoSolicitado);
@@ -185,6 +186,32 @@ public class PedidoServiceImpl implements PedidoService {
                     "Stock insuficiente para el producto " + producto.id()
                             + ". Disponible: " + producto.stock()
                             + ", solicitado: " + cantidad);
+        }
+    }
+
+    private void encolarCompensacionStock(Pedido pedido) {
+        for (PedidoItem item : pedido.getItems()) {
+            String eventId = pedido.getId() + "-" + item.getProductoId();
+            RestockRequestedEvent event = new RestockRequestedEvent(
+                    eventId,
+                    pedido.getId(),
+                    item.getProductoId(),
+                    item.getCantidad(),
+                    Instant.now()
+            );
+            try {
+                outboxEventRepository.save(OutboxEvent.builder()
+                        .agregadoId(pedido.getId())
+                        .tipoEvento(OutboxEvent.TIPO_RESTOCK_REQUIRED)
+                        .payload(objectMapper.writeValueAsString(event))
+                        .estado(OutboxEvent.EstadoOutbox.PENDIENTE)
+                        .build());
+                log.info("Restock {} encolado en outbox para producto {} del pedido {}",
+                        event.eventId(), item.getProductoId(), pedido.getId());
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(
+                        "No se pudo serializar el evento RestockRequested del pedido " + pedido.getId(), e);
+            }
         }
     }
 }

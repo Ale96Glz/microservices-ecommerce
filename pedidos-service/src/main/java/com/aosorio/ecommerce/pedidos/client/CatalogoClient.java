@@ -49,18 +49,4 @@ public class CatalogoClient {
                 })
                 .toBodilessEntity();
     }
-
-    public void reponerStock(Long usuarioId, Long productoId, int cantidad) {
-        restClient.put()
-                .uri("/api/v1/producto/{id}/stock/reponer?cantidad={cantidad}", productoId, cantidad)
-                .header(USER_ID_HEADER, String.valueOf(usuarioId))
-                .contentType(MediaType.APPLICATION_JSON)
-                .retrieve()
-                .onStatus(HttpStatusCode::is4xxClientError, (request, response) -> {
-                    throw new InvalidStockException(
-                            "No se pudo reponer el stock del producto " + productoId
-                                    + ". Cantidad: " + cantidad);
-                })
-                .toBodilessEntity();
-    }
 }

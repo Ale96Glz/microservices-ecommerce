@@ -18,9 +18,23 @@ spring:
       ddl-auto: update
     show-sql: true
     open-in-view: false
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
 
 springdoc:
   default-flat-param-object: true
+
+catalogo:
+  kafka:
+    enabled: ${CATALOGO_KAFKA_ENABLED:false}
+
+kafka:
+  retry:
+    max-attempts: 3
+    backoff-ms: 1000
 
 jwt:
   secret: ${JWT_SECRET:change-me-to-a-long-random-secret-key-at-least-32-chars}

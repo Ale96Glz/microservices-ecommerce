@@ -2,6 +2,7 @@ package com.aosorio.ecommerce.pedidos.config;
 
 import com.aosorio.ecommerce.events.OrderCreatedEvent;
 import com.aosorio.ecommerce.events.PaymentProcessedEvent;
+import com.aosorio.ecommerce.events.RestockRequestedEvent;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -76,5 +77,24 @@ public class KafkaConfig {
             ProducerFactory<String, OrderCreatedEvent> orderCreatedProducerFactory
     ) {
         return new KafkaTemplate<>(orderCreatedProducerFactory);
+    }
+
+    @Bean
+    ProducerFactory<String, RestockRequestedEvent> restockRequestedProducerFactory(
+            @Value("${spring.kafka.bootstrap-servers}") String bootstrapServers
+    ) {
+        Map<String, Object> props = new HashMap<>();
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+        props.put(JsonSerializer.ADD_TYPE_INFO_HEADERS, false);
+        return new DefaultKafkaProducerFactory<>(props);
+    }
+
+    @Bean
+    KafkaTemplate<String, RestockRequestedEvent> restockRequestedKafkaTemplate(
+            ProducerFactory<String, RestockRequestedEvent> restockRequestedProducerFactory
+    ) {
+        return new KafkaTemplate<>(restockRequestedProducerFactory);
     }
 }

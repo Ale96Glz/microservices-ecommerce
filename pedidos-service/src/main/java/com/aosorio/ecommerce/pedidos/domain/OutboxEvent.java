@@ -26,6 +26,9 @@ import java.time.LocalDateTime;
 @Table(name = "outbox_event")
 public class OutboxEvent {
 
+    public static final String TIPO_ORDER_CREATED = "ORDER_CREATED";
+    public static final String TIPO_RESTOCK_REQUIRED = "RESTOCK_REQUIRED";
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

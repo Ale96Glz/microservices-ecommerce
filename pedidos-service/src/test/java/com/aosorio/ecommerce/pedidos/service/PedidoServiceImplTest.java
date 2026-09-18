@@ -133,13 +133,17 @@ class PedidoServiceImplTest {
     }
 
     @Test
-    void cancelarPedidoLiberaStockYCambiaEstado() {
+    void cancelarPedidoEncolaRestockYCambiaEstado() {
         when(pedidoRepository.findWithItemsById(5L)).thenReturn(Optional.of(pedido(5L, "CREADO", 9L)));
         when(pedidoRepository.save(any(Pedido.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         PedidoResponseDTO respuesta = pedidoService.cancelar(5L);
 
-        verify(catalogoClient).reponerStock(9L, 1L, 1);
+        ArgumentCaptor<OutboxEvent> outboxCaptor = ArgumentCaptor.forClass(OutboxEvent.class);
+        verify(outboxEventRepository).save(outboxCaptor.capture());
+        assertThat(outboxCaptor.getValue().getTipoEvento()).isEqualTo(OutboxEvent.TIPO_RESTOCK_REQUIRED);
+        assertThat(outboxCaptor.getValue().getAgregadoId()).isEqualTo(5L);
+        assertThat(outboxCaptor.getValue().getPayload()).contains("productoId");
         assertThat(respuesta.estado()).isEqualTo("CANCELADO");
     }
 
@@ -150,7 +154,7 @@ class PedidoServiceImplTest {
         assertThatThrownBy(() -> pedidoService.cancelar(5L))
                 .isInstanceOf(ResourceInUseException.class);
 
-        verify(catalogoClient, never()).reponerStock(any(), any(), any(Integer.class));
+        verify(outboxEventRepository, never()).save(any(OutboxEvent.class));
     }
 
     @Test
@@ -165,14 +169,17 @@ class PedidoServiceImplTest {
     }
 
     @Test
-    void procesarResultadoPagoRechazadoCancelaYLiberaStock() {
+    void procesarResultadoPagoRechazadoCancelaYEncolaRestock() {
         when(pedidoRepository.findWithItemsById(5L)).thenReturn(Optional.of(pedido(5L, "CREADO", 9L)));
         when(pedidoRepository.save(any(Pedido.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         PedidoResponseDTO respuesta = pedidoService.procesarResultadoPago(
                 new PaymentProcessedEvent(1L, 5L, 9L, new BigDecimal("100.00"), "RECHAZADO", Instant.now()));
 
-        verify(catalogoClient).reponerStock(9L, 1L, 1);
+        ArgumentCaptor<OutboxEvent> outboxCaptor = ArgumentCaptor.forClass(OutboxEvent.class);
+        verify(outboxEventRepository).save(outboxCaptor.capture());
+        assertThat(outboxCaptor.getValue().getTipoEvento()).isEqualTo(OutboxEvent.TIPO_RESTOCK_REQUIRED);
+        assertThat(outboxCaptor.getValue().getPayload()).contains("\"eventId\":\"5-1\"");
         assertThat(respuesta.estado()).isEqualTo("CANCELADO");
     }
 
