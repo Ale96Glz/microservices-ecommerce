@@ -8,6 +8,9 @@ set -euo pipefail
 # inicial) -> categoria -> producto -> pedido (descuenta stock, publica
 # order-created) -> pago (publica payment-processed) -> pedido PAGADO ->
 # notificacion creada -> traza visible en Zipkin.
+# Ademas valida la saga de compensacion: un segundo pedido cuyo total supera
+# pagos.monto-maximo-aprobado es RECHAZADO -> pedido CANCELADO -> la
+# compensacion (outbox RESTOCK_REQUIRED) restaura el stock en catalogo.
 #
 # Pre-requisitos:
 #   - Stack arriba con las imagenes publicadas:
@@ -24,9 +27,13 @@ PASSWORD="SmokePass123!"
 SUFIJO_UNICO="$(date +%s)-$RANDOM"
 STOCK_INICIAL=50
 CANTIDAD=3
-# PRECIO y CANTIDAD elegidos para que total (3 * 30.00 = 90.00) quede por debajo
-# de pagos.monto-maximo-aprobado (100.00 por defecto); si lo supera, el pago
-# se emite como RECHAZADO y el pedido pasa a CANCELADO.
+# CANTIDAD_RECHAZO elegida para que el total (4 * 30.00 = 120.00) supere
+# pagos.monto-maximo-aprobado (100.00 por defecto) y el pago salga RECHAZADO,
+# disparando la saga de compensacion (pedido CANCELADO + restock en catalogo).
+CANTIDAD_RECHAZO=4
+# PRECIO y CANTIDAD del pedido feliz elegidos para que total (3 * 30.00 = 90.00)
+# quede por debajo de pagos.monto-maximo-aprobado (100.00 por defecto); si lo
+# supera, el pago se emite como RECHAZADO y el pedido pasa a CANCELADO.
 PRECIO=30.00
 
 BODY_TMP="$(mktemp)"
@@ -71,11 +78,11 @@ wait_until() { # wait_until DESCRIPCION SEGUNDOS comando...
 gateway_ready() { [ "$(curl -s -o /dev/null -w '%{http_code}' "$BASE_URL/actuator/health")" = "200" ]; }
 
 # --- 1. Gateway listo -------------------------------------------------------
-echo "[1/7] Esperando al API Gateway ($BASE_URL)..."
+echo "[1/8] Esperando al API Gateway ($BASE_URL)..."
 wait_until "gateway /actuator/health" 120 gateway_ready
 
 # --- 2. Registro y login ----------------------------------------------------
-echo "[2/7] Registro y login..."
+echo "[2/8] Registro y login..."
 # El gateway puede estar listo antes que auth-service; por eso los 5xx se
 # reintentan (sin registrar el 500 como fallo).
 registrar() {
@@ -94,7 +101,7 @@ login_ok() {
 wait_until "login" 60 login_ok
 
 # --- 3. Promover a ADMIN (no existe admin inicial) --------------------------
-echo "[3/7] Promover usuario a ADMIN (bootstrap via psql)..."
+echo "[3/8] Promover usuario a ADMIN (bootstrap via psql)..."
 docker compose exec -T postgres psql -U ecommerce -d auth_db -v ON_ERROR_STOP=1 \
   -c "UPDATE usuario SET rol='ADMIN' WHERE email='$EMAIL';" >/dev/null \
   || fail "no se pudo actualizar el rol en auth_db"
@@ -105,7 +112,7 @@ TOKEN=$(jq -r '.token' "$BODY_TMP")
 [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || fail "token no emitido"
 
 # --- 4. Categoria y producto ------------------------------------------------
-echo "[4/7] Crear categoria y producto (admin)..."
+echo "[4/8] Crear categoria y producto (admin)..."
 crear_categoria() {
   local code
   code=$(api POST /api/v1/categoria '{"nombre":"Smoke Categoria","descripcion":"creada por smoke"}' "$TOKEN")
@@ -129,7 +136,7 @@ wait_until "crear producto" 60 crear_producto
 echo "  producto: $PRODUCTO_ID"
 
 # --- 5. Pedido y descuento de stock -----------------------------------------
-echo "[5/7] Crear pedido y verificar descuento de stock..."
+echo "[5/8] Crear pedido y verificar descuento de stock..."
 crear_pedido() {
   local code
   code=$(api POST /api/v1/pedido "{\"items\":[{\"productoId\":$PRODUCTO_ID,\"cantidad\":$CANTIDAD}]}" "$TOKEN")
@@ -151,7 +158,7 @@ stock_ok() {
 wait_until "stock descontado a $((STOCK_INICIAL - CANTIDAD))" 30 stock_ok
 
 # --- 6. Pago y cadena Kafka -------------------------------------------------
-echo "[6/7] Procesar pago y verificar estados tras los eventos Kafka..."
+echo "[6/8] Procesar pago y verificar estados tras los eventos Kafka..."
 pagar() {
   local code
   code=$(api POST /api/v1/pago "{\"pedidoId\":$PEDIDO_ID,\"monto\":$TOTAL}" "$TOKEN")
@@ -187,8 +194,70 @@ notificacion_creada() {
 }
 wait_until "al menos una notificacion para el usuario" 90 notificacion_creada
 
-# --- 7. Trazabilidad distribuida --------------------------------------------
-echo "[7/7] Verificar traza distribuida en Zipkin..."
+# --- 7. Saga de compensacion: pago RECHAZADO -> CANCELADO -> restock --------
+echo "[7/8] Verificar compensacion de stock por rechazo de pago..."
+STOCK_TRAS_CANCELACION=$((STOCK_INICIAL - CANTIDAD - CANTIDAD_RECHAZO))
+
+crear_pedido_rechazado() {
+  local code
+  code=$(api POST /api/v1/pedido "{\"items\":[{\"productoId\":$PRODUCTO_ID,\"cantidad\":$CANTIDAD_RECHAZO}]}" "$TOKEN")
+  expect_retryable 201 "$code"
+  PEDIDO_RECHAZADO_ID=$(jq -r '.id' "$BODY_TMP")
+  TOTAL_RECHAZADO=$(jq -r '.total' "$BODY_TMP")
+  [ -n "$PEDIDO_RECHAZADO_ID" ] && [ "$PEDIDO_RECHAZADO_ID" != "null" ] \
+    && [ -n "$TOTAL_RECHAZADO" ] && [ "$TOTAL_RECHAZADO" != "null" ]
+}
+wait_until "crear pedido que sera rechazado" 60 crear_pedido_rechazado
+echo "  pedido a rechazar: $PEDIDO_RECHAZADO_ID (total $TOTAL_RECHAZADO)"
+
+stock_reservado_rechazado() {
+  local code stock
+  code=$(api GET "/api/v1/producto/$PRODUCTO_ID" "" "$TOKEN")
+  expect_retryable 200 "$code"
+  stock=$(jq -r '.stock' "$BODY_TMP" 2>/dev/null || true)
+  [ "$stock" = "$STOCK_TRAS_CANCELACION" ]
+}
+wait_until "stock reservado por el pedido a $STOCK_TRAS_CANCELACION" 30 stock_reservado_rechazado
+
+pagar_rechazado() {
+  local code
+  code=$(api POST /api/v1/pago "{\"pedidoId\":$PEDIDO_RECHAZADO_ID,\"monto\":$TOTAL_RECHAZADO}" "$TOKEN")
+  expect_retryable 201 "$code"
+  PAGO_RECHAZADO_ID=$(jq -r '.id' "$BODY_TMP")
+  [ -n "$PAGO_RECHAZADO_ID" ] && [ "$PAGO_RECHAZADO_ID" != "null" ]
+}
+wait_until "procesar pago que sera rechazado" 60 pagar_rechazado
+echo "  pago rechazado: $PAGO_RECHAZADO_ID"
+
+pago_estado_rechazado() {
+  local code
+  code=$(api GET "/api/v1/pago/$PAGO_RECHAZADO_ID" "" "$TOKEN")
+  expect_retryable 200 "$code"
+  [ "$(jq -r '.estado' "$BODY_TMP")" = "RECHAZADO" ]
+}
+wait_until "pago en estado RECHAZADO" 60 pago_estado_rechazado
+
+pedido_cancelado() {
+  local code
+  code=$(api GET "/api/v1/pedido/$PEDIDO_RECHAZADO_ID" "" "$TOKEN")
+  expect_retryable 200 "$code"
+  [ "$(jq -r '.estado' "$BODY_TMP")" = "CANCELADO" ]
+}
+wait_until "pedido en estado CANCELADO" 90 pedido_cancelado
+
+# La saga de compensacion (outbox RESTOCK_REQUIRED -> catalogo) restaura el stock.
+stock_restaurado() {
+  local code stock
+  code=$(api GET "/api/v1/producto/$PRODUCTO_ID" "" "$TOKEN")
+  expect_retryable 200 "$code"
+  stock=$(jq -r '.stock' "$BODY_TMP" 2>/dev/null || true)
+  [ "$stock" = "$((STOCK_INICIAL - CANTIDAD))" ]
+}
+wait_until "stock restaurado a $((STOCK_INICIAL - CANTIDAD))" 90 stock_restaurado
+echo "  restock aplicado (stock de vuelta a $((STOCK_INICIAL - CANTIDAD)))"
+
+# --- 8. Trazabilidad distribuida --------------------------------------------
+echo "[8/8] Verificar traza distribuida en Zipkin..."
 traces_ok() {
   local n
   n=$(curl -s "$ZIPKIN_URL/api/v2/traces?limit=5" | jq 'length' 2>/dev/null || true)
@@ -197,5 +266,6 @@ traces_ok() {
 wait_until "traza en Zipkin" 120 traces_ok
 
 echo
-echo "SMOKE OK: pedido $PEDIDO_ID (total $TOTAL), pago $PAGO_ID, estado PAGADO,"
-echo "stock y notificaciones verificados, traza distribuida en Zipkin."
+echo "SMOKE OK: pedido $PEDIDO_ID (total $TOTAL) PAGADO, pago $PAGO_ID PROCESADO,"
+echo "compensacion verificada (pago $PAGO_RECHAZADO_ID RECHAZADO -> pedido CANCELADO"
+echo "-> stock restaurado), notificaciones y traza distribuida en Zipkin."

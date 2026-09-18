@@ -17,6 +17,7 @@ Michael Nygard (Contexto → Decisión → Consecuencias).
 | [ADR-0010](./adr/ADR-0010-rate-limiting-redis.md) | Rate limiting distribuido con Redis en el API Gateway | Aceptado |
 | [ADR-0011](./adr/ADR-0011-observabilidad.md) | Observabilidad: logs estructurados, métricas y trazabilidad distribuida | Aceptado |
 | [ADR-0012](./adr/ADR-0012-ci-y-smoke-test.md) | Pipeline CI y smoke tests E2E | Aceptado |
+| [ADR-0013](./adr/ADR-0013-compensacion-stock-saga-outbox.md) | Compensación de stock ante rechazo de pago (saga con outbox) | Aceptado |
 
 ## Diagramas C4 (Modelo C4)
 

@@ -35,9 +35,9 @@ catálogo, pedidos, pagos y notificaciones mediante APIs REST.
 - Swagger/OpenAPI en los servicios REST.
 - H2 para ejecución local.
 - PostgreSQL para ejecución con Docker.
-- Kafka para la comunicación entre pedidos, pagos y notificaciones.
-- Ciclo de estados de pedidos (CREADO → PAGADO / CANCELADO) y pagos (PROCESADO / RECHAZADO), con simulación de rechazo y liberación de stock al cancelar o rechazar.
-- Transactional Outbox: los eventos (OrderCreated, PaymentProcessed) se guardan en una tabla interna en la misma transacción del dato de negocio y un publicador los envía a Kafka.
+- Kafka para la comunicación entre pedidos, pagos, notificaciones y catálogo.
+- Ciclo de estados de pedidos (CREADO → PAGADO / CANCELADO) y pagos (PROCESADO / RECHAZADO), con simulación de rechazo y compensación de stock vía saga (outbox `RESTOCK_REQUIRED` → catálogo) al cancelar o rechazar.
+- Transactional Outbox: los eventos (OrderCreated, PaymentProcessed, RestockRequested) se guardan en una tabla interna en la misma transacción del dato de negocio y un publicador los envía a Kafka.
 - Reintentos con backoff y Dead Letter Topics (DLT) para eventos Kafka fallidos.
 - Health checks compatibles con Kubernetes.
 
@@ -313,8 +313,13 @@ IMAGE_PREFIX=ghcr.io/ale96glz/microservices-ecommerce IMAGE_VERSION=latest \
 El script recorre: registro → login → (bootstrap a `ADMIN` vía `psql`, no hay
 admin inicial) → categoría → producto → pedido (descuenta stock) → pago →
 eventos Kafka (`order-created`, `payment-processed`) → pedido `PAGADO` →
-notificación creada → traza en Zipkin. Detalles de la decisión en
-[ADR-0012](./docs/adr/ADR-0012-ci-y-smoke-test.md).
+notificación creada → traza en Zipkin. Además valida la **saga de
+compensación**: un segundo pedido con total superior al umbral de aprobación
+(`100.00`) se rechaza (`RECHAZADO`), el pedido pasa a `CANCELADO` y la
+compensación por outbox (`restock-requested`) restaura el stock en catálogo.
+Detalles de la decisión en
+[ADR-0012](./docs/adr/ADR-0012-ci-y-smoke-test.md) y
+[ADR-0013](./docs/adr/ADR-0013-compensacion-stock-saga-outbox.md).
 
 ## Hoja de ruta
 
