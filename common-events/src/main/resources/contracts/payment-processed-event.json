@@ -1,0 +1,8 @@
+{
+  "pagoId": 10,
+  "pedidoId": 1,
+  "usuarioId": 2,
+  "monto": 250.50,
+  "estado": "PROCESADO",
+  "procesadoEn": "2026-09-18T10:05:00Z"
+}
