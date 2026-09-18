@@ -293,6 +293,29 @@ Estos endpoints son usados por las `startupProbe`, `readinessProbe` y
 `livenessProbe` de Kubernetes. En Kubernetes se consultan a través del
 Service interno correspondiente (no están publicados al host).
 
+## Smoke test E2E
+
+El flujo completo de compra se automatiza en CI (`.github/workflows/smoke.yml`),
+probando las imágenes publicadas en GHCR. Para ejecutarlo localmente con las
+imágenes publicadas:
+
+```bash
+docker compose pull postgres kafka zipkin redis \
+  auth-service catalogo-service pedidos-service pagos-service \
+  notificaciones-service api-gateway
+IMAGE_PREFIX=ghcr.io/ale96glz/microservices-ecommerce IMAGE_VERSION=latest \
+  docker compose up -d --no-build postgres kafka zipkin redis \
+  auth-service catalogo-service pedidos-service pagos-service \
+  notificaciones-service api-gateway
+./scripts/smoke-test.sh
+```
+
+El script recorre: registro → login → (bootstrap a `ADMIN` vía `psql`, no hay
+admin inicial) → categoría → producto → pedido (descuenta stock) → pago →
+eventos Kafka (`order-created`, `payment-processed`) → pedido `PAGADO` →
+notificación creada → traza en Zipkin. Detalles de la decisión en
+[ADR-0012](./docs/adr/ADR-0012-ci-y-smoke-test.md).
+
 ## Hoja de ruta
 
 ### Fase 1 — Plataforma y despliegue
@@ -329,5 +352,5 @@ Service interno correspondiente (no están publicados al host).
 
 - [x] Agregar pruebas unitarias y de integración.
 - [x] Añadir pruebas de contrato entre servicios.
-- [ ] Automatizar smoke tests en CI.
+- [x] Automatizar smoke tests en CI.
 - [ ] Documentar escenarios completos de compra.
