@@ -4,5 +4,6 @@
   "usuarioId": 2,
   "monto": 250.50,
   "estado": "PROCESADO",
+  "motivoRechazo": null,
   "procesadoEn": "2026-09-18T10:05:00Z"
 }

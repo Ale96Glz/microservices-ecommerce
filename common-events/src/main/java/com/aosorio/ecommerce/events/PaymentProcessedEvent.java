@@ -9,6 +9,7 @@ public record PaymentProcessedEvent(
         Long usuarioId,
         BigDecimal monto,
         String estado,
+        String motivoRechazo,
         Instant procesadoEn
 ) {
 }
