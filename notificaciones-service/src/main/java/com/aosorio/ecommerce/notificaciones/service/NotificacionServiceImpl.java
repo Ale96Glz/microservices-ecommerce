@@ -56,6 +56,9 @@ public class NotificacionServiceImpl implements NotificacionService {
     public NotificacionResponseDTO registrarPagoProcesado(PaymentProcessedEvent event) {
         String mensaje = "El pago #" + event.pagoId() + " del pedido #" + event.pedidoId()
                 + " quedó en estado " + event.estado() + ". Monto: " + event.monto();
+        if (event.motivoRechazo() != null) {
+            mensaje += " Motivo: " + event.motivoRechazo();
+        }
         return guardar(
                 event.usuarioId(),
                 Notificacion.TipoNotificacion.PAGO_PROCESADO,

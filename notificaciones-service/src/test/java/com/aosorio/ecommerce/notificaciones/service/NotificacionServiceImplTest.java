@@ -108,13 +108,28 @@ class NotificacionServiceImplTest {
                 .thenAnswer(invocation -> notificacion(3L, 9L, "PAGO_PROCESADO", false));
 
         notificacionService.registrarPagoProcesado(
-                new PaymentProcessedEvent(20L, 10L, 9L, new BigDecimal("100.00"), "PROCESADO", Instant.now()));
+                new PaymentProcessedEvent(20L, 10L, 9L, new BigDecimal("100.00"), "PROCESADO", null, Instant.now()));
 
         ArgumentCaptor<Notificacion> captor = ArgumentCaptor.forClass(Notificacion.class);
         verify(notificacionRepository).save(captor.capture());
         assertThat(captor.getValue().getMensaje()).contains("pago #20");
         assertThat(captor.getValue().getMensaje()).contains("PROCESADO");
+        assertThat(captor.getValue().getMensaje()).doesNotContain("Motivo:");
         assertThat(captor.getValue().getReferenciaId()).isEqualTo(20L);
+    }
+
+    @Test
+    void registrarPagoRechazadoIncluyeElMotivo() {
+        when(notificacionRepository.save(any(Notificacion.class)))
+                .thenAnswer(invocation -> notificacion(4L, 9L, "PAGO_PROCESADO", false));
+
+        notificacionService.registrarPagoProcesado(new PaymentProcessedEvent(21L, 10L, 9L,
+                new BigDecimal("9999.00"), "RECHAZADO", "Monto excede el máximo aprobado (5000.00)", Instant.now()));
+
+        ArgumentCaptor<Notificacion> captor = ArgumentCaptor.forClass(Notificacion.class);
+        verify(notificacionRepository).save(captor.capture());
+        assertThat(captor.getValue().getMensaje()).contains("RECHAZADO");
+        assertThat(captor.getValue().getMensaje()).contains("máximo aprobado");
     }
 
     @Test
