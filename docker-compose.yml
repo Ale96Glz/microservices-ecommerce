@@ -178,6 +178,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      pedidos-service:
+        condition: service_started
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/pagos_db
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
@@ -185,6 +187,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-ecommerce}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       PAGOS_KAFKA_ENABLED: "true"
+      PEDIDOS_SERVICE_URL: http://pedidos-service:8083
       JWT_SECRET: ${JWT_SECRET:-change-me-to-a-long-random-secret-key-at-least-32-chars}
       JWT_FILTER_ENABLED: "true"
       ZIPKIN_ENDPOINT: http://zipkin:9411/api/v2/spans

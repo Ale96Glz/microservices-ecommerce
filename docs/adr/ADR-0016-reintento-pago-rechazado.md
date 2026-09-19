@@ -98,14 +98,25 @@ pago huérfanos. La reactivación del flujo de reintento obliga a cerrar ese hue
    intento creado (recurso creado, ADR-0014) e incluye `intento` en
    `PagoResponseDTO`; `409` ahora significa "pedido ya pagado" o "pedido no
    pagable", no "ya existe un pago".
-5. **Persistencia y migración**: esquema H2/PostgreSQL — drop del `unique` de
-   `pedido_id` y creación de `(pedido_id, intento)`; donde el `ddl-auto` no
-   elimine la restricción antigua, se aporta SQL de migración explícito en el
-   bootstrap (aplica también el `motivo_cancelacion` en `pedido`).
-6. **Smoke E2E**: se añade un paso que tras el rechazo hace
-   `reactivar` → `POST /pago` (cambio del umbral en runtime para que el
-   reintento apruebe) → pedido `PAGADO`, verificando stock recuperado en la
-   reactivación y sin duplicado de notificaciones de pedido.
+5. **Persistencia y migración**: esquema H2/PostgreSQL — la unicidad pasa a
+   `(pedido_id, intento)` (`uk_pago_pedido_intento`) y se elimina la antigua
+   `unique(pedido_id)`. Como `ddl-auto=update` no elimina la restricción vieja,
+   `pagos-service` ejecuta al arranque (solo PostgreSQL) una migración que
+   detecta y elimina cualquier `unique` sobre `pedido_id` (idempotente).
+   `pedido` gana la columna `motivo_cancelacion`.
+6. **Umbral de aprobación ajustable en runtime**: el máximo aprobado se lee de
+   la tabla `configuracion` (clave `monto_maximo_aprobado`, sembrada al arranque
+   con `pagos.monto-maximo-aprobado`) en **cada** pago, permitiendo cambiar el
+   umbral sin reiniciar el servicio (así el reintento puede aprobar en el smoke).
+7. **Compensación por ciclo**: el `eventId` del `RESTOCK_REQUIRED` incorpora
+   origen/intento (`pedidoId-productoId-intentoN` para rechazo de pago,
+   `pedidoId-productoId-usuario` para cancelación manual); el dedup de catálogo
+   (ADR-0013) aplica una sola vez por **ciclo**, evitando perder stock en ciclos
+   repetidos rechazo → reactivar → rechazo.
+8. **Smoke E2E**: tras el rechazo se hace `reactivar` → re-reserva stock →
+   `POST /pago` (con el umbral ya subido en runtime) → pedido `PAGADO`,
+   verificando `intento=2`, stock re-reservado y sin duplicados de notificación
+   de pedido.
 
 ## Consecuencias
 

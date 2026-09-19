@@ -38,8 +38,10 @@ listener** (`PedidoServiceImpl.procesarResultadoPago` → rama `RECHAZADO` →
      la reposición **atómica con una tabla de idempotencia por `eventId`**:
      `restock_event(event_id PK, pedido_id, producto_id, cantidad, aplicado_en)`.
      Sin dedup, el reproceso (retry/DLT) volvería a sumar stock.
-   - `eventId` es **determinista** (`pedidoId-productoId`) para que reintentos de
-     la misma intención se dedupliquen en catálogo.
+   - `eventId` es **determinista por ciclo de compensación**
+     (`pedidoId-productoId-{intento|usuario}`, ver ADR-0016) para que reintentos
+     de la misma intención se dedupliquen en catálogo, sin deduplicar ciclos
+     distintos de un mismo pedido (rechazo → reactivar → nuevo rechazo).
    - Pros: compensación **garantizada** (el intento vive en el outbox hasta
      publicarse) e **idempotente** (una sola aplicación por intención), cierra la
      ventana del doble restock, no depende de la disponibilidad síncrona de
@@ -91,7 +93,8 @@ listener** (`PedidoServiceImpl.procesarResultadoPago` → rama `RECHAZADO` →
 - **Compensación garantizada**: la intención de restock es durable (outbox) y se
   publica hasta que lo logra; no depende de catálogo en el momento del rechazo.
 - **Idempotencia real**: la tabla `restock_event` (PK `eventId`) hace que reintentos,
-  DLT o re-entrega apliquen la reposición **una sola vez** por intención.
+  DLT o re-entrega apliquen la reposición **una sola vez** por intención y, desde el
+  ADR-0016, una sola vez por **ciclo** de un pedido.
 - **Autodocumentado y comprobable**: el contrato del evento, los tests y el paso 7
   del smoke convierten el flujo de compensación en un escenario ejecutable.
 - **Coherencia de infraestructura**: catálogo sigue el mismo patrón de consumidor
