@@ -10,6 +10,7 @@ public record PaymentProcessedEvent(
         BigDecimal monto,
         String estado,
         String motivoRechazo,
+        Integer intento,
         Instant procesadoEn
 ) {
 }

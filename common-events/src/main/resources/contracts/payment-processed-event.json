@@ -5,5 +5,6 @@
   "monto": 250.50,
   "estado": "PROCESADO",
   "motivoRechazo": null,
+  "intento": 1,
   "procesadoEn": "2026-09-18T10:05:00Z"
 }

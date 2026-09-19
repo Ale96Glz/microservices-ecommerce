@@ -108,7 +108,7 @@ class NotificacionServiceImplTest {
                 .thenAnswer(invocation -> notificacion(3L, 9L, "PAGO_PROCESADO", false));
 
         notificacionService.registrarPagoProcesado(
-                new PaymentProcessedEvent(20L, 10L, 9L, new BigDecimal("100.00"), "PROCESADO", null, Instant.now()));
+                new PaymentProcessedEvent(20L, 10L, 9L, new BigDecimal("100.00"), "PROCESADO", null, 1, Instant.now()));
 
         ArgumentCaptor<Notificacion> captor = ArgumentCaptor.forClass(Notificacion.class);
         verify(notificacionRepository).save(captor.capture());
@@ -124,7 +124,7 @@ class NotificacionServiceImplTest {
                 .thenAnswer(invocation -> notificacion(4L, 9L, "PAGO_PROCESADO", false));
 
         notificacionService.registrarPagoProcesado(new PaymentProcessedEvent(21L, 10L, 9L,
-                new BigDecimal("9999.00"), "RECHAZADO", "Monto excede el máximo aprobado (5000.00)", Instant.now()));
+                new BigDecimal("9999.00"), "RECHAZADO", "Monto excede el máximo aprobado (5000.00)", 1, Instant.now()));
 
         ArgumentCaptor<Notificacion> captor = ArgumentCaptor.forClass(Notificacion.class);
         verify(notificacionRepository).save(captor.capture());
