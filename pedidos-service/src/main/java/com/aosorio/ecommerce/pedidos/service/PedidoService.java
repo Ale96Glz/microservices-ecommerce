@@ -13,6 +13,8 @@ public interface PedidoService {
 
     PedidoResponseDTO cancelar(Long id);
 
+    PedidoResponseDTO reactivar(Long id);
+
     PedidoResponseDTO procesarResultadoPago(PaymentProcessedEvent event);
 
     PedidoResponseDTO obtenerPorId(Long id);

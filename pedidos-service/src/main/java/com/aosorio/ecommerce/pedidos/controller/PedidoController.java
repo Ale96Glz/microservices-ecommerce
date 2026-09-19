@@ -87,4 +87,12 @@ public class PedidoController {
         GatewayAuth.requireSelfOrAdmin(user, pedido.usuarioId());
         return ResponseEntity.ok(pedidoService.cancelar(id));
     }
+
+    @PutMapping("/{id}/reactivar")
+    public ResponseEntity<PedidoResponseDTO> reactivar(@PathVariable Long id, HttpServletRequest request) {
+        GatewayAuth.User user = GatewayAuth.requireUser(request);
+        PedidoResponseDTO pedido = pedidoService.obtenerPorId(id);
+        GatewayAuth.requireSelfOrAdmin(user, pedido.usuarioId());
+        return ResponseEntity.ok(pedidoService.reactivar(id));
+    }
 }

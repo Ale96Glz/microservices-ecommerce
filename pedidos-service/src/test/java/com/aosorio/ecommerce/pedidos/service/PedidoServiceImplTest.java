@@ -32,6 +32,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -144,11 +145,13 @@ class PedidoServiceImplTest {
         assertThat(outboxCaptor.getValue().getTipoEvento()).isEqualTo(OutboxEvent.TIPO_RESTOCK_REQUIRED);
         assertThat(outboxCaptor.getValue().getAgregadoId()).isEqualTo(5L);
         assertThat(outboxCaptor.getValue().getPayload()).contains("productoId");
+        assertThat(outboxCaptor.getValue().getPayload()).contains("\"eventId\":\"5-1-usuario\"");
         assertThat(respuesta.estado()).isEqualTo("CANCELADO");
+        assertThat(respuesta.motivoCancelacion()).isEqualTo("USUARIO");
     }
 
     @Test
-    void cancelarPedidoPagoNoSePermite() {
+    void cancelarPedidoYaLiberadoNoSePermite() {
         when(pedidoRepository.findWithItemsById(5L)).thenReturn(Optional.of(pedido(5L, "PAGADO", 9L)));
 
         assertThatThrownBy(() -> pedidoService.cancelar(5L))
@@ -163,9 +166,10 @@ class PedidoServiceImplTest {
         when(pedidoRepository.save(any(Pedido.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         PedidoResponseDTO respuesta = pedidoService.procesarResultadoPago(
-                new PaymentProcessedEvent(1L, 5L, 9L, new BigDecimal("100.00"), "PROCESADO", null, Instant.now()));
+                new PaymentProcessedEvent(1L, 5L, 9L, new BigDecimal("100.00"), "PROCESADO", null, 1, Instant.now()));
 
         assertThat(respuesta.estado()).isEqualTo("PAGADO");
+        assertThat(respuesta.motivoCancelacion()).isNull();
     }
 
     @Test
@@ -174,13 +178,14 @@ class PedidoServiceImplTest {
         when(pedidoRepository.save(any(Pedido.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         PedidoResponseDTO respuesta = pedidoService.procesarResultadoPago(
-                new PaymentProcessedEvent(1L, 5L, 9L, new BigDecimal("100.00"), "RECHAZADO", null, Instant.now()));
+                new PaymentProcessedEvent(1L, 5L, 9L, new BigDecimal("100.00"), "RECHAZADO", null, 1, Instant.now()));
 
         ArgumentCaptor<OutboxEvent> outboxCaptor = ArgumentCaptor.forClass(OutboxEvent.class);
         verify(outboxEventRepository).save(outboxCaptor.capture());
         assertThat(outboxCaptor.getValue().getTipoEvento()).isEqualTo(OutboxEvent.TIPO_RESTOCK_REQUIRED);
-        assertThat(outboxCaptor.getValue().getPayload()).contains("\"eventId\":\"5-1\"");
+        assertThat(outboxCaptor.getValue().getPayload()).contains("\"eventId\":\"5-1-intento1\"");
         assertThat(respuesta.estado()).isEqualTo("CANCELADO");
+        assertThat(respuesta.motivoCancelacion()).isEqualTo("PAGO_RECHAZADO");
     }
 
     @Test
@@ -188,8 +193,52 @@ class PedidoServiceImplTest {
         when(pedidoRepository.findWithItemsById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> pedidoService.procesarResultadoPago(
-                new PaymentProcessedEvent(1L, 99L, 9L, new BigDecimal("100.00"), "PROCESADO", null, Instant.now())))
+                new PaymentProcessedEvent(1L, 99L, 9L, new BigDecimal("100.00"), "PROCESADO", null, 1, Instant.now())))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void reactivarRevalidaYReReservaStockYDevuelveAcreado() {
+        Pedido cancelado = pedido(5L, "CANCELADO", 9L);
+        cancelado.setMotivoCancelacion(Pedido.MotivoCancelacion.PAGO_RECHAZADO);
+        when(pedidoRepository.findWithItemsById(5L)).thenReturn(Optional.of(cancelado));
+        when(catalogoClient.obtenerProducto(1L)).thenReturn(producto(1L, "Laptop Pro", 10, "ACTIVO"));
+        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        PedidoResponseDTO respuesta = pedidoService.reactivar(5L);
+
+        verify(catalogoClient).descontarStock(9L, 1L, 1);
+        verify(outboxEventRepository, never()).save(any(OutboxEvent.class));
+        assertThat(respuesta.estado()).isEqualTo("CREADO");
+        assertThat(respuesta.motivoCancelacion()).isNull();
+    }
+
+    @Test
+    void reactivarSoloPermiteCanceladoPorRechazoDePago() {
+        Pedido canceladoPorUsuario = pedido(5L, "CANCELADO", 9L);
+        canceladoPorUsuario.setMotivoCancelacion(Pedido.MotivoCancelacion.USUARIO);
+        when(pedidoRepository.findWithItemsById(5L)).thenReturn(Optional.of(canceladoPorUsuario));
+
+        assertThatThrownBy(() -> pedidoService.reactivar(5L))
+                .isInstanceOf(ResourceInUseException.class);
+
+        verify(outboxEventRepository, never()).save(any(OutboxEvent.class));
+        verify(catalogoClient, never()).descontarStock(any(), any(), anyInt());
+    }
+
+    @Test
+    void reactivarConStockInsuficienteLanzaResourceInUseYNoCambiaElEstado() {
+        Pedido cancelado = pedido(5L, "CANCELADO", 9L);
+        cancelado.setMotivoCancelacion(Pedido.MotivoCancelacion.PAGO_RECHAZADO);
+        when(pedidoRepository.findWithItemsById(5L)).thenReturn(Optional.of(cancelado));
+        when(catalogoClient.obtenerProducto(1L)).thenReturn(producto(1L, "Laptop Pro", 0, "AGOTADO"));
+
+        assertThatThrownBy(() -> pedidoService.reactivar(5L))
+                .isInstanceOf(ResourceInUseException.class)
+                .hasMessageContaining("Stock insuficiente");
+
+        verify(pedidoRepository, never()).save(any());
+        verify(outboxEventRepository, never()).save(any(OutboxEvent.class));
     }
 
     @Test

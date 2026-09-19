@@ -9,6 +9,7 @@ public record PedidoResponseDTO(
         Long usuarioId,
         BigDecimal total,
         String estado,
+        String motivoCancelacion,
         List<PedidoItemResponseDTO> items,
         LocalDateTime fechaCreacion
 ) {

@@ -46,6 +46,10 @@ public class Pedido {
     @Column(nullable = false)
     private EstadoPedido estado;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "motivo_cancelacion")
+    private MotivoCancelacion motivoCancelacion;
+
     @CreationTimestamp
     @Column(updatable = false, nullable = false)
     private LocalDateTime fechaCreacion;
@@ -64,5 +68,9 @@ public class Pedido {
 
     public enum EstadoPedido {
         CREADO, CANCELADO, PAGADO
+    }
+
+    public enum MotivoCancelacion {
+        PAGO_RECHAZADO, USUARIO
     }
 }

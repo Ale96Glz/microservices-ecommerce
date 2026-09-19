@@ -15,6 +15,7 @@ public class PedidoMapper {
                 pedido.getUsuarioId(),
                 pedido.getTotal(),
                 pedido.getEstado() != null ? pedido.getEstado().name() : null,
+                pedido.getMotivoCancelacion() != null ? pedido.getMotivoCancelacion().name() : null,
                 pedido.getItems().stream().map(this::toItemResponseDto).toList(),
                 pedido.getFechaCreacion()
         );

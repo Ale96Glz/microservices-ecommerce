@@ -111,12 +111,40 @@ public class PedidoServiceImpl implements PedidoService {
                     "No se puede cancelar el pedido " + id + " porque está en estado " + pedido.getEstado());
         }
 
-        encolarCompensacionStock(pedido);
+        encolarCompensacionStock(pedido, null);
 
         pedido.setEstado(Pedido.EstadoPedido.CANCELADO);
+        pedido.setMotivoCancelacion(Pedido.MotivoCancelacion.USUARIO);
         Pedido cancelado = pedidoRepository.save(pedido);
         log.info("Se ha cancelado el pedido {} y su restock encolado para compensacion", cancelado.getId());
         return pedidoMapper.toResponseDto(cancelado);
+    }
+
+    @Override
+    @Transactional
+    public PedidoResponseDTO reactivar(Long id) {
+        Pedido pedido = pedidoRepository.findWithItemsById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el pedido con id: " + id));
+
+        if (pedido.getEstado() != Pedido.EstadoPedido.CANCELADO
+                || pedido.getMotivoCancelacion() != Pedido.MotivoCancelacion.PAGO_RECHAZADO) {
+            throw new ResourceInUseException(
+                    "No se puede reactivar el pedido " + id
+                            + " porque está en estado " + pedido.getEstado()
+                            + " (motivo de cancelación: " + pedido.getMotivoCancelacion() + ")");
+        }
+
+        for (PedidoItem item : pedido.getItems()) {
+            ProductoCatalogoDTO producto = catalogoClient.obtenerProducto(item.getProductoId());
+            validarProducto(producto, item.getCantidad());
+            catalogoClient.descontarStock(pedido.getUsuarioId(), item.getProductoId(), item.getCantidad());
+        }
+
+        pedido.setEstado(Pedido.EstadoPedido.CREADO);
+        pedido.setMotivoCancelacion(null);
+        Pedido reactivado = pedidoRepository.save(pedido);
+        log.info("El pedido {} ha sido reactivado y su stock re-reservado", reactivado.getId());
+        return pedidoMapper.toResponseDto(reactivado);
     }
 
     @Override
@@ -134,10 +162,12 @@ public class PedidoServiceImpl implements PedidoService {
         Pedido.EstadoPedido estadoSolicitado = pedido.getEstado();
         if ("PROCESADO".equals(event.estado())) {
             estadoSolicitado = Pedido.EstadoPedido.PAGADO;
+            pedido.setMotivoCancelacion(null);
             log.info("El pedido {} ha sido marcado como PAGADO", pedido.getId());
         } else if ("RECHAZADO".equals(event.estado())) {
             estadoSolicitado = Pedido.EstadoPedido.CANCELADO;
-            encolarCompensacionStock(pedido);
+            pedido.setMotivoCancelacion(Pedido.MotivoCancelacion.PAGO_RECHAZADO);
+            encolarCompensacionStock(pedido, event.intento());
             log.info("El pedido {} ha sido CANCELADO por rechazo de pago y su restock encolado para compensacion",
                     pedido.getId());
         }
@@ -189,9 +219,10 @@ public class PedidoServiceImpl implements PedidoService {
         }
     }
 
-    private void encolarCompensacionStock(Pedido pedido) {
+    private void encolarCompensacionStock(Pedido pedido, Integer intentoPago) {
         for (PedidoItem item : pedido.getItems()) {
-            String eventId = pedido.getId() + "-" + item.getProductoId();
+            String sufijo = intentoPago != null ? "intento" + intentoPago : "usuario";
+            String eventId = pedido.getId() + "-" + item.getProductoId() + "-" + sufijo;
             RestockRequestedEvent event = new RestockRequestedEvent(
                     eventId,
                     pedido.getId(),
