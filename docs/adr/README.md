@@ -20,6 +20,7 @@ Michael Nygard (Contexto → Decisión → Consecuencias).
 | [ADR-0013](./adr/ADR-0013-compensacion-stock-saga-outbox.md) | Compensación de stock ante rechazo de pago (saga con outbox) | Aceptado |
 | [ADR-0014](./adr/ADR-0014-contrato-http-pago-201-motivechazo.md) | Contrato HTTP de creación de pago (201 como recurso creado, aprobación en el cuerpo) | Aceptado |
 | [ADR-0015](./adr/ADR-0015-arranque-ordenado-gateway-auth.md) | Arranque ordenado del API Gateway (gateway espera a auth y redis sanos) | Aceptado |
+| [ADR-0016](./adr/ADR-0016-reintento-pago-rechazado.md) | Reintento de pago tras rechazo (intentos por pedido + reactivación explícita) | Aceptado |
 
 ## Diagramas C4 (Modelo C4)
 

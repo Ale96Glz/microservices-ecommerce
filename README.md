@@ -370,4 +370,4 @@ la decisión en
 - [x] Añadir pruebas de contrato entre servicios.
 - [x] Automatizar smoke tests en CI.
 - [x] Documentar escenarios completos de compra.
-- [ ] Reintento de pago rechazado: hoy `409` por unicidad de pedido; ver [ADR-0014](./docs/adr/ADR-0014-contrato-http-pago-201-motivechazo.md).
+- [ ] Reintento de pago rechazado: decidido en [ADR-0016](./docs/adr/ADR-0016-reintento-pago-rechazado.md) (intentos por pedido + reactivación explícita); pendiente de implementar.

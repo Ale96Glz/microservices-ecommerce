@@ -71,9 +71,9 @@ Restricciones del dominio que condicionan la solución:
    cuando el pago es rechazado ("Motivo: Monto excede…").
 5. **Gap de reintento documentado, no resuelto en este ADR**: la unicidad
    `existsByPedidoId` hace que reintentar el pago de un pedido rechazado dé
-   `409 Conflict`. Un flujo de "reintentar pago tras rechazo" es trabajo futuro
-   (p. ej. reintento con idempotencia distinta o estado de pago re-procesable);
-   queda registrado como follow-up en el README.
+   `409 Conflict`. El flujo de reintento (intentos por pedido + reactivación
+   explícita) se define y decide en el **ADR-0016**; este ADR solo lo registra
+   como dependencia.
 6. **Smoke E2E**: la parte 7 ya cubre el caso rechazado; se verifica además que la
    notificación incluya el motivo. No cambia el `201` esperado por el contrato.
 
