@@ -31,6 +31,10 @@ pagos:
   outbox:
     poll-interval-ms: ${PAGOS_OUTBOX_POLL_INTERVAL_MS:5000}
 
+pedidos:
+  service:
+    url: ${PEDIDOS_SERVICE_URL:http://localhost:8083}
+
 kafka:
   retry:
     max-attempts: 3

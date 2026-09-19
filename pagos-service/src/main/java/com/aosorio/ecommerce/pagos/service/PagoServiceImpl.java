@@ -2,6 +2,7 @@ package com.aosorio.ecommerce.pagos.service;
 
 import com.aosorio.ecommerce.events.OrderCreatedEvent;
 import com.aosorio.ecommerce.events.PaymentProcessedEvent;
+import com.aosorio.ecommerce.pagos.client.PedidoClient;
 import com.aosorio.ecommerce.pagos.domain.OutboxEvent;
 import com.aosorio.ecommerce.pagos.domain.Pago;
 import com.aosorio.ecommerce.pagos.dto.PageResponseDTO;
@@ -16,7 +17,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,20 +34,20 @@ public class PagoServiceImpl implements PagoService {
     private final PagoMapper pagoMapper;
     private final OutboxEventRepository outboxEventRepository;
     private final ObjectMapper objectMapper;
-
-    @Value("${pagos.monto-maximo-aprobado}")
-    private BigDecimal montoMaximoAprobado;
+    private final PedidoClient pedidoClient;
+    private final ConfiguracionService configuracionService;
 
     @Override
     @Transactional
     public PagoResponseDTO procesar(Long usuarioId, PagoRequestDTO request) {
+        pedidoClient.validarPagable(request.getPedidoId(), usuarioId);
         return guardarPago(request.getPedidoId(), usuarioId, request.getMonto());
     }
 
     @Override
     @Transactional
     public PagoResponseDTO procesarDesdeEvento(OrderCreatedEvent event) {
-        return pagoRepository.findByPedidoId(event.pedidoId())
+        return pagoRepository.findFirstByPedidoIdOrderByIdDesc(event.pedidoId())
                 .map(pagoMapper::toResponseDto)
                 .orElseGet(() -> guardarPago(event.pedidoId(), event.usuarioId(), event.total()));
     }
@@ -63,7 +63,7 @@ public class PagoServiceImpl implements PagoService {
     @Override
     @Transactional(readOnly = true)
     public PagoResponseDTO obtenerPorPedido(Long pedidoId) {
-        Pago pago = pagoRepository.findByPedidoId(pedidoId)
+        Pago pago = pagoRepository.findFirstByPedidoIdOrderByIdDesc(pedidoId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No se encontró pago para el pedido con id: " + pedidoId));
         return pagoMapper.toResponseDto(pago);
@@ -94,10 +94,15 @@ public class PagoServiceImpl implements PagoService {
     }
 
     private PagoResponseDTO guardarPago(Long pedidoId, Long usuarioId, BigDecimal monto) {
-        if (pagoRepository.existsByPedidoId(pedidoId)) {
-            throw new ResourceInUseException("Ya existe un pago para el pedido con id: " + pedidoId);
+        if (pagoRepository.existsByPedidoIdAndEstado(pedidoId, Pago.EstadoPago.PROCESADO)) {
+            throw new ResourceInUseException("El pedido con id " + pedidoId + " ya está pagado");
         }
 
+        int intento = pagoRepository.findFirstByPedidoIdOrderByIdDesc(pedidoId)
+                .map(pago -> pago.getIntento() + 1)
+                .orElse(1);
+
+        BigDecimal montoMaximoAprobado = configuracionService.montoMaximoAprobado();
         Pago.EstadoPago estado = monto.compareTo(montoMaximoAprobado) > 0
                 ? Pago.EstadoPago.RECHAZADO
                 : Pago.EstadoPago.PROCESADO;
@@ -113,10 +118,12 @@ public class PagoServiceImpl implements PagoService {
                 .monto(monto)
                 .estado(estado)
                 .motivoRechazo(motivoRechazo)
+                .intento(intento)
                 .build();
 
         Pago guardado = pagoRepository.save(pago);
-        log.info("Se ha procesado el pago {} para pedido {} con estado {}", guardado.getId(), pedidoId, estado);
+        log.info("Se ha procesado el pago {} (intento {}) para pedido {} con estado {}",
+                guardado.getId(), intento, pedidoId, estado);
 
         PaymentProcessedEvent event = new PaymentProcessedEvent(
                 guardado.getId(),
@@ -125,6 +132,7 @@ public class PagoServiceImpl implements PagoService {
                 guardado.getMonto(),
                 guardado.getEstado().name(),
                 guardado.getMotivoRechazo(),
+                guardado.getIntento(),
                 guardado.getFechaProcesado().toInstant(ZoneOffset.UTC)
         );
 

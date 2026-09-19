@@ -28,7 +28,7 @@ import java.time.LocalDateTime;
 @Table(
         name = "pago",
         uniqueConstraints = {
-                @UniqueConstraint(columnNames = "pedido_id")
+                @UniqueConstraint(name = "uk_pago_pedido_intento", columnNames = {"pedido_id", "intento"})
         }
 )
 public class Pago {
@@ -37,7 +37,7 @@ public class Pago {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "pedido_id", nullable = false, unique = true)
+    @Column(name = "pedido_id", nullable = false)
     private Long pedidoId;
 
     @Column(nullable = false)
@@ -51,6 +51,9 @@ public class Pago {
     private EstadoPago estado;
 
     private String motivoRechazo;
+
+    @Column(nullable = false)
+    private Integer intento;
 
     @CreationTimestamp
     @Column(updatable = false, nullable = false)

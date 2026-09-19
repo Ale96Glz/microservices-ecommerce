@@ -10,6 +10,7 @@ public record PagoResponseDTO(
         BigDecimal monto,
         String estado,
         String motivoRechazo,
+        Integer intento,
         LocalDateTime fechaProcesado
 ) {
 }

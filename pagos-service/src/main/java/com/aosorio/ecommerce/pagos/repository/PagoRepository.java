@@ -8,9 +8,9 @@ import java.util.Optional;
 
 public interface PagoRepository extends JpaRepository<Pago, Long> {
 
-    Optional<Pago> findByPedidoId(Long pedidoId);
+    Optional<Pago> findFirstByPedidoIdOrderByIdDesc(Long pedidoId);
 
-    boolean existsByPedidoId(Long pedidoId);
+    boolean existsByPedidoIdAndEstado(Long pedidoId, Pago.EstadoPago estado);
 
     List<Pago> findByUsuarioId(Long usuarioId);
 }

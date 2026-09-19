@@ -1,6 +1,7 @@
 package com.aosorio.ecommerce.pagos.service;
 
 import com.aosorio.ecommerce.events.OrderCreatedEvent;
+import com.aosorio.ecommerce.pagos.client.PedidoClient;
 import com.aosorio.ecommerce.pagos.domain.OutboxEvent;
 import com.aosorio.ecommerce.pagos.domain.Pago;
 import com.aosorio.ecommerce.pagos.dto.PagoRequestDTO;
@@ -18,7 +19,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -28,6 +28,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -39,6 +41,10 @@ class PagoServiceImplTest {
     private PagoRepository pagoRepository;
     @Mock
     private OutboxEventRepository outboxEventRepository;
+    @Mock
+    private PedidoClient pedidoClient;
+    @Mock
+    private ConfiguracionService configuracionService;
 
     private PagoMapper pagoMapper;
     private ObjectMapper objectMapper;
@@ -48,11 +54,12 @@ class PagoServiceImplTest {
     void setUp() {
         pagoMapper = new PagoMapper();
         objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-        pagoService = new PagoServiceImpl(pagoRepository, pagoMapper, outboxEventRepository, objectMapper);
-        ReflectionTestUtils.setField(pagoService, "montoMaximoAprobado", new BigDecimal("5000.00"));
+        pagoService = new PagoServiceImpl(
+                pagoRepository, pagoMapper, outboxEventRepository, objectMapper, pedidoClient, configuracionService);
+        lenient().when(configuracionService.montoMaximoAprobado()).thenReturn(new BigDecimal("5000.00"));
     }
 
-    private Pago pago(Long id, Long pedidoId, Long usuarioId, BigDecimal monto, String estado) {
+    private Pago pago(Long id, Long pedidoId, Long usuarioId, BigDecimal monto, String estado, Integer intento) {
         return Pago.builder()
                 .id(id)
                 .pedidoId(pedidoId)
@@ -61,36 +68,53 @@ class PagoServiceImplTest {
                 .estado(Pago.EstadoPago.valueOf(estado))
                 .motivoRechazo("RECHAZADO".equals(estado)
                         ? "Monto excede el máximo aprobado (5000.00)" : null)
+                .intento(intento)
                 .fechaProcesado(LocalDateTime.now())
                 .build();
     }
 
+    private void stubPedidoSinPagoPrevio(Long pedidoId) {
+        when(pagoRepository.existsByPedidoIdAndEstado(pedidoId, Pago.EstadoPago.PROCESADO)).thenReturn(false);
+        when(pagoRepository.findFirstByPedidoIdOrderByIdDesc(pedidoId)).thenReturn(Optional.empty());
+    }
+
     @Test
     void procesarPagoBajoElLimiteQuedaProcesadoYPublicaEvento() {
-        when(pagoRepository.existsByPedidoId(5L)).thenReturn(false);
-        when(pagoRepository.save(any(Pago.class))).thenReturn(pago(1L, 5L, 9L, new BigDecimal("100.00"), "PROCESADO"));
+        stubPedidoSinPagoPrevio(5L);
+        when(pagoRepository.save(any(Pago.class)))
+                .thenReturn(pago(1L, 5L, 9L, new BigDecimal("100.00"), "PROCESADO", 1));
 
         PagoResponseDTO respuesta = pagoService.procesar(9L,
                 PagoRequestDTO.builder().pedidoId(5L).monto(new BigDecimal("100.00")).build());
 
+        verify(pedidoClient).validarPagable(5L, 9L);
         assertThat(respuesta.estado()).isEqualTo("PROCESADO");
+        assertThat(respuesta.intento()).isEqualTo(1);
         assertThat(respuesta.motivoRechazo()).isNull();
+
+        ArgumentCaptor<Pago> pagoCaptor = ArgumentCaptor.forClass(Pago.class);
+        verify(pagoRepository).save(pagoCaptor.capture());
+        assertThat(pagoCaptor.getValue().getIntento()).isEqualTo(1);
+
         ArgumentCaptor<OutboxEvent> captor = ArgumentCaptor.forClass(OutboxEvent.class);
         verify(outboxEventRepository).save(captor.capture());
         assertThat(captor.getValue().getTipoEvento()).isEqualTo("PAYMENT_PROCESSED");
         assertThat(captor.getValue().getEstado()).isEqualTo(OutboxEvent.EstadoOutbox.PENDIENTE);
         assertThat(captor.getValue().getPayload()).contains("PROCESADO");
+        assertThat(captor.getValue().getPayload()).contains("\"intento\":1");
     }
 
     @Test
     void procesarPagoSobreElLimiteSeRechazaConMotivo() {
-        when(pagoRepository.existsByPedidoId(5L)).thenReturn(false);
-        when(pagoRepository.save(any(Pago.class))).thenReturn(pago(1L, 5L, 9L, new BigDecimal("9999.00"), "RECHAZADO"));
+        stubPedidoSinPagoPrevio(5L);
+        when(pagoRepository.save(any(Pago.class)))
+                .thenReturn(pago(1L, 5L, 9L, new BigDecimal("9999.00"), "RECHAZADO", 1));
 
         PagoResponseDTO respuesta = pagoService.procesar(9L,
                 PagoRequestDTO.builder().pedidoId(5L).monto(new BigDecimal("9999.00")).build());
 
         assertThat(respuesta.estado()).isEqualTo("RECHAZADO");
+        assertThat(respuesta.intento()).isEqualTo(1);
         assertThat(respuesta.motivoRechazo()).isEqualTo("Monto excede el máximo aprobado (5000.00)");
 
         ArgumentCaptor<Pago> pagoCaptor = ArgumentCaptor.forClass(Pago.class);
@@ -105,8 +129,38 @@ class PagoServiceImplTest {
     }
 
     @Test
-    void procesarPagoDuplicadoLanzaResourceInUse() {
-        when(pagoRepository.existsByPedidoId(5L)).thenReturn(true);
+    void reintentoTrasRechazoCreaIntentoSiguiente() {
+        when(pagoRepository.existsByPedidoIdAndEstado(5L, Pago.EstadoPago.PROCESADO)).thenReturn(false);
+        when(pagoRepository.findFirstByPedidoIdOrderByIdDesc(5L)).thenReturn(
+                Optional.of(pago(1L, 5L, 9L, new BigDecimal("9999.00"), "RECHAZADO", 1)));
+        when(pagoRepository.save(any(Pago.class)))
+                .thenReturn(pago(2L, 5L, 9L, new BigDecimal("120.00"), "PROCESADO", 2));
+
+        PagoResponseDTO respuesta = pagoService.procesar(9L,
+                PagoRequestDTO.builder().pedidoId(5L).monto(new BigDecimal("120.00")).build());
+
+        assertThat(respuesta.estado()).isEqualTo("PROCESADO");
+        ArgumentCaptor<Pago> captor = ArgumentCaptor.forClass(Pago.class);
+        verify(pagoRepository).save(captor.capture());
+        assertThat(captor.getValue().getIntento()).isEqualTo(2);
+    }
+
+    @Test
+    void procesarPagoDePedidoYaPagadoLanzaResourceInUse() {
+        when(pagoRepository.existsByPedidoIdAndEstado(5L, Pago.EstadoPago.PROCESADO)).thenReturn(true);
+
+        assertThatThrownBy(() -> pagoService.procesar(9L,
+                PagoRequestDTO.builder().pedidoId(5L).monto(new BigDecimal("100.00")).build()))
+                .isInstanceOf(ResourceInUseException.class)
+                .hasMessageContaining("ya está pagado");
+
+        verify(pagoRepository, never()).save(any());
+    }
+
+    @Test
+    void procesarBloqueaPedidoNoPagable() {
+        doThrow(new ResourceInUseException("El pedido con id 5 no está en estado CREADO (estado actual: CANCELADO)"))
+                .when(pedidoClient).validarPagable(5L, 9L);
 
         assertThatThrownBy(() -> pagoService.procesar(9L,
                 PagoRequestDTO.builder().pedidoId(5L).monto(new BigDecimal("100.00")).build()))
@@ -116,23 +170,25 @@ class PagoServiceImplTest {
     }
 
     @Test
-    void procesarDesdeEventoGuardaSiNoExistePago() {
-        when(pagoRepository.findByPedidoId(5L)).thenReturn(Optional.empty());
-        when(pagoRepository.existsByPedidoId(5L)).thenReturn(false);
+    void procesarDesdeEventoGuardaSiNoExistePagoYSinValidarElPedido() {
+        when(pagoRepository.findFirstByPedidoIdOrderByIdDesc(5L)).thenReturn(Optional.empty());
+        when(pagoRepository.existsByPedidoIdAndEstado(5L, Pago.EstadoPago.PROCESADO)).thenReturn(false);
         when(pagoRepository.save(any(Pago.class)))
-                .thenReturn(pago(2L, 5L, 9L, new BigDecimal("200.00"), "PROCESADO"));
+                .thenReturn(pago(2L, 5L, 9L, new BigDecimal("200.00"), "PROCESADO", 1));
 
         PagoResponseDTO respuesta = pagoService.procesarDesdeEvento(
                 new OrderCreatedEvent(5L, 9L, new BigDecimal("200.00"), Instant.now()));
 
         assertThat(respuesta.estado()).isEqualTo("PROCESADO");
+        assertThat(respuesta.intento()).isEqualTo(1);
         assertThat(respuesta.pedidoId()).isEqualTo(5L);
+        verify(pedidoClient, never()).validarPagable(any(), any());
     }
 
     @Test
-    void procesarDesdeEventoReutilizaElPagoExistente() {
-        when(pagoRepository.findByPedidoId(5L))
-                .thenReturn(Optional.of(pago(7L, 5L, 9L, new BigDecimal("200.00"), "RECHAZADO")));
+    void procesarDesdeEventoReutilizaElUltimoIntento() {
+        when(pagoRepository.findFirstByPedidoIdOrderByIdDesc(5L))
+                .thenReturn(Optional.of(pago(7L, 5L, 9L, new BigDecimal("200.00"), "RECHAZADO", 1)));
 
         PagoResponseDTO respuesta = pagoService.procesarDesdeEvento(
                 new OrderCreatedEvent(5L, 9L, new BigDecimal("200.00"), Instant.now()));
@@ -151,7 +207,7 @@ class PagoServiceImplTest {
 
     @Test
     void obtenerPorPedidoSinPagoLanzaNotFound() {
-        when(pagoRepository.findByPedidoId(99L)).thenReturn(Optional.empty());
+        when(pagoRepository.findFirstByPedidoIdOrderByIdDesc(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> pagoService.obtenerPorPedido(99L))
                 .isInstanceOf(ResourceNotFoundException.class);

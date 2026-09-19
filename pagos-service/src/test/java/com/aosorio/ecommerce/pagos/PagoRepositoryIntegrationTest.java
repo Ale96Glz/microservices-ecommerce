@@ -29,53 +29,57 @@ class PagoRepositoryIntegrationTest {
     @Autowired
     private TestEntityManager entityManager;
 
-    private Pago pago(Long pedidoId, Long usuarioId, String estado) {
+    private Pago pago(Long pedidoId, Long usuarioId, String estado, Integer intento) {
         return Pago.builder()
                 .pedidoId(pedidoId)
                 .usuarioId(usuarioId)
                 .monto(new BigDecimal("250.00"))
                 .estado(Pago.EstadoPago.valueOf(estado))
+                .intento(intento)
                 .build();
     }
 
     @Test
     void guardaPagoYAsignaIdYFecha() {
-        Pago guardado = pagoRepository.saveAndFlush(pago(10L, 1L, "PROCESADO"));
+        Pago guardado = pagoRepository.saveAndFlush(pago(10L, 1L, "PROCESADO", 1));
 
         assertThat(guardado.getId()).isNotNull();
         assertThat(guardado.getFechaProcesado()).isNotNull();
     }
 
     @Test
-    void findByPedidoIdRetornaElPago() {
-        pagoRepository.saveAndFlush(pago(20L, 1L, "PROCESADO"));
+    void findFirstByPedidoIdOrderByIdDescRetornaElUltimoIntento() {
+        pagoRepository.saveAndFlush(pago(20L, 1L, "RECHAZADO", 1));
+        pagoRepository.saveAndFlush(pago(20L, 1L, "PROCESADO", 2));
         entityManager.clear();
 
-        Optional<Pago> encontrado = pagoRepository.findByPedidoId(20L);
+        Optional<Pago> encontrado = pagoRepository.findFirstByPedidoIdOrderByIdDesc(20L);
 
         assertThat(encontrado).isPresent();
+        assertThat(encontrado.get().getIntento()).isEqualTo(2);
         assertThat(encontrado.get().getEstado()).isEqualTo(Pago.EstadoPago.PROCESADO);
     }
 
     @Test
-    void findByPedidoIdInexistenteRetornaVacio() {
-        assertThat(pagoRepository.findByPedidoId(999L)).isEmpty();
+    void findFirstByPedidoIdInexistenteRetornaVacio() {
+        assertThat(pagoRepository.findFirstByPedidoIdOrderByIdDesc(999L)).isEmpty();
     }
 
     @Test
-    void existsByPedidoIdReflejaElEstado() {
-        pagoRepository.saveAndFlush(pago(30L, 1L, "RECHAZADO"));
+    void existsProcesadoReflejaElEstado() {
+        pagoRepository.saveAndFlush(pago(30L, 1L, "RECHAZADO", 1));
 
-        assertThat(pagoRepository.existsByPedidoId(30L)).isTrue();
-        assertThat(pagoRepository.existsByPedidoId(31L)).isFalse();
+        assertThat(pagoRepository.existsByPedidoIdAndEstado(30L, Pago.EstadoPago.PROCESADO)).isFalse();
+        assertThat(pagoRepository.existsByPedidoIdAndEstado(30L, Pago.EstadoPago.RECHAZADO)).isTrue();
+        assertThat(pagoRepository.existsByPedidoIdAndEstado(31L, Pago.EstadoPago.PROCESADO)).isFalse();
     }
 
     @Test
     void findByUsuarioIdFiltraPorUsuario() {
         pagoRepository.saveAll(List.of(
-                pago(40L, 1L, "PROCESADO"),
-                pago(41L, 1L, "PROCESADO"),
-                pago(42L, 2L, "PROCESADO")));
+                pago(40L, 1L, "PROCESADO", 1),
+                pago(41L, 1L, "PROCESADO", 1),
+                pago(42L, 2L, "PROCESADO", 1)));
 
         List<Pago> deUsuario1 = pagoRepository.findByUsuarioId(1L);
 
@@ -84,11 +88,20 @@ class PagoRepositoryIntegrationTest {
     }
 
     @Test
-    void noPermiteDosPagosParaElMismoPedido() {
-        pagoRepository.saveAndFlush(pago(50L, 1L, "PROCESADO"));
+    void noPermiteDosPagosConElMismoPedidoEIntento() {
+        pagoRepository.saveAndFlush(pago(50L, 1L, "PROCESADO", 1));
 
-        assertThatThrownBy(() -> pagoRepository.saveAndFlush(pago(50L, 1L, "PROCESADO")))
+        assertThatThrownBy(() -> pagoRepository.saveAndFlush(pago(50L, 1L, "PROCESADO", 1)))
                 .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void permiteNuevoIntentoTrasUnRechazo() {
+        pagoRepository.saveAndFlush(pago(60L, 1L, "RECHAZADO", 1));
+
+        pagoRepository.saveAndFlush(pago(60L, 1L, "PROCESADO", 2));
+
+        assertThat(pagoRepository.findFirstByPedidoIdOrderByIdDesc(60L)).isPresent();
     }
 
     @Test
