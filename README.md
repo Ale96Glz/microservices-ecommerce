@@ -36,8 +36,19 @@ catálogo, pedidos, pagos y notificaciones mediante APIs REST.
 - H2 para ejecución local.
 - PostgreSQL para ejecución con Docker.
 - Kafka para la comunicación entre pedidos, pagos, notificaciones y catálogo.
-- Ciclo de estados de pedidos (CREADO → PAGADO / CANCELADO) y pagos (PROCESADO / RECHAZADO con `motivoRechazo` en la respuesta), con simulación de rechazo y compensación de stock vía saga (outbox `RESTOCK_REQUIRED` → catálogo) al cancelar o rechazar.
-- Transactional Outbox: los eventos (OrderCreated, PaymentProcessed, RestockRequested) se guardan en una tabla interna en la misma transacción del dato de negocio y un publicador los envía a Kafka.
+- Redis para rate limiting distribuido en el gateway, sesiones y caché.
+- Kafka UI (Kafka UI / Topics) en `http://localhost:8089`.
+- Observabilidad: trazabilidad distribuida con Zipkin, métricas con Prometheus y
+  dashboards con Grafana (stack completo en Compose y Kubernetes).
+- Ciclo de estados de pedidos (CREADO → PAGADO / CANCELADO) y pagos (PROCESADO /
+  RECHAZADO con `motivoRechazo` en la respuesta), con simulación de rechazo y
+  compensación de stock vía saga (outbox `RESTOCK_REQUIRED` → catálogo) al
+  cancelar o rechazar.
+- Reintento de pago rechazado (ADR-0016): intentos por pedido + reactivación
+  explícita del pedido cancelado, con re-reserva atómica de stock.
+- Transactional Outbox: los eventos (OrderCreated, PaymentProcessed,
+  RestockRequested) se guardan en una tabla interna en la misma transacción del
+  dato de negocio y un publicador los envía a Kafka.
 - Reintentos con backoff y Dead Letter Topics (DLT) para eventos Kafka fallidos.
 - Health checks compatibles con Kubernetes.
 - Arranque orquestado en Compose: el gateway espera a auth-service y redis sanos (healthchecks) antes de aceptar tráfico (ADR-0015).
@@ -107,11 +118,13 @@ docker compose up -d --build
 El stack incluye:
 
 - PostgreSQL con una base de datos por servicio.
+- Redis (ratio limit, sesiones y caché).
 - Kafka.
 - Kafka UI.
+- Zipkin (trazas).
+- Prometheus (métricas).
+- Grafana (dashboards).
 - Los seis servicios de la aplicación.
-
-URLs principales:
 
 | Recurso | URL |
 |---|---|
@@ -122,6 +135,9 @@ URLs principales:
 | Pagos | interno (red de Compose, `pagos-service:8084`) |
 | Notificaciones | interno (red de Compose, `notificaciones-service:8085`) |
 | Kafka UI | http://localhost:8089 |
+| Zipkin | http://localhost:9411 |
+| Prometheus | http://localhost:9090 |
+| Grafana | http://localhost:3000 |
 
 Para detener el entorno:
 
