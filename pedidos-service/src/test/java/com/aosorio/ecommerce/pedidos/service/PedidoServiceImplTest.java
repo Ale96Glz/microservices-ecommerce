@@ -242,6 +242,50 @@ class PedidoServiceImplTest {
     }
 
     @Test
+    void reactivarPedidoInexistenteLanzaNotFound() {
+        when(pedidoRepository.findWithItemsById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> pedidoService.reactivar(99L))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void reactivarPedidoNoCanceladoLanzaResourceInUse() {
+        when(pedidoRepository.findWithItemsById(5L)).thenReturn(Optional.of(pedido(5L, "PAGADO", 9L)));
+
+        assertThatThrownBy(() -> pedidoService.reactivar(5L))
+                .isInstanceOf(ResourceInUseException.class);
+
+        verify(outboxEventRepository, never()).save(any(OutboxEvent.class));
+        verify(catalogoClient, never()).descontarStock(any(), any(), anyInt());
+    }
+
+    @Test
+    void reactivarConSegundoItemAgotadoNoDescuentaNingunItem() {
+        Pedido cancelado = pedido(5L, "CANCELADO", 9L);
+        cancelado.setMotivoCancelacion(Pedido.MotivoCancelacion.PAGO_RECHAZADO);
+        PedidoItem mouse = PedidoItem.builder()
+                .productoId(2L)
+                .nombreProducto("Mouse")
+                .precioUnitario(new BigDecimal("50.00"))
+                .cantidad(2)
+                .subtotal(new BigDecimal("100.00"))
+                .build();
+        cancelado.agregarItem(mouse);
+        when(pedidoRepository.findWithItemsById(5L)).thenReturn(Optional.of(cancelado));
+        when(catalogoClient.obtenerProducto(1L)).thenReturn(producto(1L, "Laptop Pro", 10, "ACTIVO"));
+        when(catalogoClient.obtenerProducto(2L)).thenReturn(producto(2L, "Mouse", 0, "AGOTADO"));
+
+        assertThatThrownBy(() -> pedidoService.reactivar(5L))
+                .isInstanceOf(ResourceInUseException.class)
+                .hasMessageContaining("Stock insuficiente");
+
+        verify(catalogoClient, never()).descontarStock(any(), any(), anyInt());
+        verify(pedidoRepository, never()).save(any());
+        verify(outboxEventRepository, never()).save(any(OutboxEvent.class));
+    }
+
+    @Test
     void obtenerPorIdInexistenteLanzaNotFound() {
         when(pedidoRepository.findWithItemsById(99L)).thenReturn(Optional.empty());
 

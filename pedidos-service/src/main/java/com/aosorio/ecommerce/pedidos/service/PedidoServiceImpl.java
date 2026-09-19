@@ -137,6 +137,9 @@ public class PedidoServiceImpl implements PedidoService {
         for (PedidoItem item : pedido.getItems()) {
             ProductoCatalogoDTO producto = catalogoClient.obtenerProducto(item.getProductoId());
             validarProducto(producto, item.getCantidad());
+        }
+
+        for (PedidoItem item : pedido.getItems()) {
             catalogoClient.descontarStock(pedido.getUsuarioId(), item.getProductoId(), item.getCantidad());
         }
 
