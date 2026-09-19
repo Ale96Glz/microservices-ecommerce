@@ -6,7 +6,7 @@ set -euo pipefail
 #
 # Escenario: registro -> login -> (promover a ADMIN via psql, no hay admin
 # inicial) -> categoria -> producto -> pedido (descuenta stock, publica
-# order-created) -> pago (publica payment-processed) -> pedido PAGADO ->
+# order-created) -> pago automatico PROCESADO (payment-processed) -> pedido PAGADO ->
 # notificacion creada -> traza visible en Zipkin.
 # Ademas valida la saga de compensacion (ADR-0013): el pago AUTOMATICO de un
 # segundo pedido (disparado por order-created) es RECHAZADO porque su total
@@ -161,25 +161,21 @@ stock_ok() {
 }
 wait_until "stock descontado a $((STOCK_INICIAL - CANTIDAD))" 30 stock_ok
 
-# --- 6. Pago y cadena Kafka -------------------------------------------------
-echo "[6/9] Procesar pago y verificar estados tras los eventos Kafka..."
-pagar() {
+# --- 6. Pago automatico (order-created) y cadena Kafka ----------------------
+echo "[6/9] Verificar pago automatico y estados tras los eventos Kafka..."
+# OrderCreatedListener cobra el pedido; un POST /pago aqui recibe 409 si Kafka
+# ya persistio PROCESADO, y wait_until nunca vera 201.
+pago_automatico_procesado() {
   local code
-  code=$(api POST /api/v1/pago "{\"pedidoId\":$PEDIDO_ID,\"monto\":$TOTAL}" "$TOKEN")
-  expect_retryable 201 "$code"
+  code=$(api GET "/api/v1/pago/pedido/$PEDIDO_ID" "" "$TOKEN")
+  expect_retryable 200 "$code" || return 1
+  [ "$(jq -r '.estado' "$BODY_TMP")" = "PROCESADO" ] \
+    && [ "$(jq -r '.intento' "$BODY_TMP")" = "1" ] || return 1
   PAGO_ID=$(jq -r '.id' "$BODY_TMP")
   [ -n "$PAGO_ID" ] && [ "$PAGO_ID" != "null" ]
 }
-wait_until "procesar pago" 60 pagar
+wait_until "pago automatico en estado PROCESADO (intento 1)" 90 pago_automatico_procesado
 echo "  pago: $PAGO_ID"
-
-pago_procesado() {
-  local code
-  code=$(api GET "/api/v1/pago/$PAGO_ID" "" "$TOKEN")
-  expect_retryable 200 "$code"
-  [ "$(jq -r '.estado' "$BODY_TMP")" = "PROCESADO" ]
-}
-wait_until "pago en estado PROCESADO" 60 pago_procesado
 
 pedido_pagado() {
   local code

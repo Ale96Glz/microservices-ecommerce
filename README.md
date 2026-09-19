@@ -328,15 +328,16 @@ IMAGE_PREFIX=ghcr.io/ale96glz/microservices-ecommerce IMAGE_VERSION=latest \
 ```
 
 El script recorre: registro → login → (bootstrap a `ADMIN` vía `psql`, no hay
-admin inicial) → categoría → producto → pedido (descuenta stock) → pago →
-eventos Kafka (`order-created`, `payment-processed`) → pedido `PAGADO` →
-notificación creada → traza en Zipkin. Además valida la **saga de
+admin inicial) → categoría → producto → pedido (descuenta stock, publica
+`order-created`) → pago automático `PROCESADO` (`payment-processed`) → pedido
+`PAGADO` → notificación creada → traza en Zipkin. Además valida la **saga de
 compensación**: un segundo pedido con total superior al umbral de aprobación
-(`100.00`) se rechaza (`RECHAZADO`), el pedido pasa a `CANCELADO` y la
-compensación por outbox (`restock-requested`) restaura el stock en catálogo.
+(`100.00`) se rechaza automáticamente (`RECHAZADO`), el pedido pasa a `CANCELADO`
+y la compensación por outbox (`restock-requested`) restaura el stock en catálogo.
 La notificación del pago rechazado incluye el motivo (`motivoRechazo`); el
-`POST /api/v1/pago` responde siempre `201` cuando el intento se registra
-(recurso creado) y el resultado se lee del cuerpo. Desde el arranque, el
+`POST /api/v1/pago` se usa en el reintento (pedido reactivado, sin
+`order-created`) y responde `201` cuando el intento se registra, con el
+resultado en el cuerpo. Desde el arranque, el
 gateway solo acepta tráfico cuando auth-service y redis están sanos
 (healthchecks en Compose), evitando la carrera de arranque. Los escenarios
 completos (compra aprobada, rechazo + compensación, cancelación manual y

@@ -102,21 +102,23 @@ curl -s -X POST $BASE/api/v1/pedido -H "Authorization: Bearer $TOKEN" \
 - Se publica `order-created` (outbox): el usuario recibe la notificación
   `Tu pedido #1 fue creado. Total: 90.0`.
 
-### 1.6 Procesar pago (aprobado)
+### 1.6 Pago automático (aprobado)
+
+`pagos-service` consume `order-created` y registra el pago. Los `90.00` están
+por debajo del umbral `100.00` → `PROCESADO`. Un `POST /api/v1/pago` posterior
+devuelve `409` (pedido ya pagado). El smoke espera el recurso con GET:
 
 ```bash
-curl -s -X POST $BASE/api/v1/pago -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" -d '{"pedidoId":1,"monto":90.00}'
+curl -s $BASE/api/v1/pago/pedido/1 -H "Authorization: Bearer $TOKEN"
 ```
 
 ```json
 { "id": 1, "pedidoId": 1, "usuarioId": 9, "monto": 90.00, "estado": "PROCESADO",
-  "motivoRechazo": null, "fechaProcesado": "..." }
+  "motivoRechazo": null, "intento": 1, "fechaProcesado": "..." }
 ```
 
-Los `90.00` están por debajo del umbral `100.00` → `PROCESADO`. Se publica
-`payment-processed`; al consumirlo, `pedidos-service` mueve el pedido a
-`PAGADO` y `notificaciones-service` genera:
+Se publica `payment-processed`; al consumirlo, `pedidos-service` mueve el pedido
+a `PAGADO` y `notificaciones-service` genera:
 `El pago #1 del pedido #1 quedó en estado PROCESADO. Monto: 90.0`.
 
 ### 1.7 Verificar estados (eventual) y notificaciones
@@ -150,21 +152,26 @@ curl -s -X POST $BASE/api/v1/pedido -H "Authorization: Bearer $TOKEN" \
 # stock: 47 -> 43
 ```
 
-### 2.2 Procesar pago (rechazado)
+### 2.2 Pago automático (rechazado)
+
+El mismo listener de `order-created` registra el pago. El total `120.00`
+supera el umbral → `RECHAZADO`. El smoke espera con GET (no con POST):
 
 ```bash
-curl -s -X POST $BASE/api/v1/pago -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" -d '{"pedidoId":2,"monto":120.00}'
+curl -s $BASE/api/v1/pago/pedido/2 -H "Authorization: Bearer $TOKEN"
 ```
 
 ```json
 { "id": 2, "pedidoId": 2, "usuarioId": 9, "monto": 120.00, "estado": "RECHAZADO",
-  "motivoRechazo": "Monto excede el máximo aprobado (100.00)", "fechaProcesado": "..." }
+  "motivoRechazo": "Monto excede el máximo aprobado (100.00)", "intento": 1,
+  "fechaProcesado": "..." }
 ```
 
-> El HTTP devuelve `201` igualmente: significa *recurso pago creado* (el
-> intento queda registrado para auditoría). El resultado de la aprobación se
-> lee en `estado` + `motivoRechazo` (ADR-0014).
+> Un `POST /api/v1/pago` que sí crea un intento responde `201`: significa
+> *recurso pago creado* (auditoría). El resultado de la aprobación se lee en
+> `estado` + `motivoRechazo` (ADR-0014). Tras un pago automático, el POST
+> choca con `409`. El POST se usa en el reintento tras `reactivar` (ADR-0016),
+> porque esa transición no vuelve a publicar `order-created`.
 
 ### 2.3 Compensación (eventual, saga outbox)
 
