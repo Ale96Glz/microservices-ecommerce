@@ -138,7 +138,7 @@ El stack incluye:
 | Kafka UI | http://localhost:8089 |
 | Zipkin | http://localhost:9411 |
 | Prometheus | http://localhost:9090 |
-| Grafana | http://localhost:3000 |
+| Grafana | http://localhost:3000 (login; por defecto `admin` / `admin` si no hay `.env`) |
 
 Para detener el entorno:
 
@@ -225,7 +225,8 @@ Authorization: Bearer <token>
 El gateway deja públicos únicamente el registro y el login. Las operaciones
 administrativas requieren el rol `ADMIN`.
 
-Usuario administrador de demostración:
+En **laboratorio** (Compose o profile por defecto) se crea un administrador
+de demostración. **No** se crea en Kubernetes con `SPRING_PROFILES_ACTIVE=prod`.
 
 ```text
 Email: admin@ecommerce.local

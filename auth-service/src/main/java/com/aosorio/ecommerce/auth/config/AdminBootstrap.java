@@ -6,10 +6,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
+@Profile("!prod")
+@ConditionalOnProperty(name = "auth.bootstrap-admin", havingValue = "true", matchIfMissing = true)
 @RequiredArgsConstructor
 @Slf4j
 public class AdminBootstrap implements ApplicationRunner {
@@ -31,6 +35,6 @@ public class AdminBootstrap implements ApplicationRunner {
                 .rol(Usuario.RolUsuario.ADMIN)
                 .build();
         usuarioRepository.save(admin);
-        log.info("Usuario ADMIN de demo creado: {} / Admin1234", email);
+        log.info("Usuario ADMIN de demo creado: {} (password de laboratorio en el README)", email);
     }
 }

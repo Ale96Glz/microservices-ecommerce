@@ -80,11 +80,12 @@ k8s). Compose y tests locales siguen en profile por defecto (lab).
 
 ### 2. Usuario ADMIN de demo
 
-**Hoy:** `AdminBootstrap` crea `admin@ecommerce.local` / `Admin1234` si no
-existe y lo escribe en logs. El README publica esas credenciales. El smoke
-promueve un usuario vía `psql` (no depende de este bootstrap).
+**Hoy:** en profile `prod` el bootstrap no corre (`@Profile("!prod")`). En
+laboratorio sí; la password ya no se loguea. Un ADMIN ya persistido en
+`auth_db` no se borra al redesplegar (hay que rotarlo a mano). El Job
+one-shot de primer ADMIN sigue pendiente.
 
-**Cambio:**
+**Hecho:**
 
 - `@Profile("!prod")` o `AUTH_BOOTSTRAP_ADMIN=false` en producción.
 - El primer ADMIN sale de un Job/script one-shot que lee el password del
@@ -96,10 +97,12 @@ solo como lab).
 
 ### 3. Grafana
 
-**Hoy:** `GF_AUTH_ANONYMOUS_ENABLED=true`, rol `Admin`, usuario/password
-`admin` en `k8s/grafana-deployment.yaml` (y anónimo en Compose).
+**Hoy:** anónimo desactivado en k8s y Compose. ClusterIP (no Ingress).
+Credenciales `GRAFANA_ADMIN_USER` / `GRAFANA_ADMIN_PASSWORD` en el Secret
+(`optional: true`; si faltan, Grafana usa `admin`/`admin`). Hay que sellar
+las claves nuevas.
 
-**Cambio:**
+**Hecho:**
 
 - Anónimo desactivado; usuario y password desde `ecommerce-secrets`.
 - **No** publicar Grafana (ni Prometheus) en el Ingress público: ClusterIP +

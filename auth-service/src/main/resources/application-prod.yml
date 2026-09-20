@@ -6,3 +6,7 @@ jwt:
 spring:
   datasource:
     password: ${SPRING_DATASOURCE_PASSWORD}
+
+# El AdminBootstrap de laboratorio no carga con este profile.
+auth:
+  bootstrap-admin: false
