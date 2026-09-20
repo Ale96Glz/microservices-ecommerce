@@ -3,6 +3,8 @@
 
 # Compatible con Windows PowerShell 5.1 y PowerShell 7 en Windows, Linux y macOS.
 # Requiere kubectl disponible en el PATH.
+# Solo infraestructura base (namespace, ConfigMap, Secret, PostgreSQL).
+# Microservicios e imágenes GHCR: scripts/deploy-k8s-full.ps1 [-ImageVersion 1.1.1]
 
 $ErrorActionPreference = "Stop"
 

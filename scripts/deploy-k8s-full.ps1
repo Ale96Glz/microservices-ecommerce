@@ -1,10 +1,18 @@
-#!/usr/bin/env pwsh
+﻿#!/usr/bin/env pwsh
 #requires -Version 5.1
 
 # Compatible con Windows PowerShell 5.1 y PowerShell 7 en Windows, Linux y macOS.
-# Requiere kubectl disponible en el PATH.
+# Requiere kubectl (y git, si no pasas -ImageVersion) en el PATH.
 # Despliega el stack completo: namespace, ConfigMap, Secret, PostgreSQL, Kafka,
 # microservicios (auth, catalogo, pedidos, pagos, notificaciones, api-gateway) e Ingress.
+#
+# Las imágenes de app usan el último tag git v* (sin la v), p. ej. v1.1.1 -> :1.1.1.
+# Override:  .\scripts\deploy-k8s-full.ps1 -ImageVersion 1.1.1
+
+param(
+    [string]$ImageVersion = "",
+    [string]$ImagePrefix = "ghcr.io/ale96glz/microservices-ecommerce"
+)
 
 $ErrorActionPreference = "Stop"
 
@@ -86,6 +94,40 @@ function Write-Step {
     Write-Host "[$Number] $Message" -ForegroundColor Cyan
 }
 
+function Get-VersionWithoutVPrefix {
+    param([Parameter(Mandatory = $true)][string]$Value)
+
+    $trimmed = $Value.Trim()
+    if ($trimmed.StartsWith("v") -or $trimmed.StartsWith("V")) {
+        return $trimmed.Substring(1)
+    }
+    return $trimmed
+}
+
+function Resolve-ImageVersion {
+    param([string]$Requested)
+
+    if (-not [string]::IsNullOrWhiteSpace($Requested)) {
+        return Get-VersionWithoutVPrefix $Requested
+    }
+
+    if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+        throw "git no está en el PATH. Pasa -ImageVersion (ej. 1.1.1)."
+    }
+
+    Push-Location $repoRoot
+    try {
+        $tag = git describe --tags --abbrev=0 --match "v*" 2>$null
+        if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($tag)) {
+            throw "No hay tags v* en el repo. Pasa -ImageVersion (ej. 1.1.1)."
+        }
+        return Get-VersionWithoutVPrefix $tag
+    }
+    finally {
+        Pop-Location
+    }
+}
+
 if (-not (Get-Command kubectl -ErrorAction SilentlyContinue)) {
     throw "kubectl no está disponible en el PATH. Cierra y abre la terminal nuevamente."
 }
@@ -95,7 +137,10 @@ if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($context)) {
     throw "No hay un contexto Kubernetes activo."
 }
 
+$resolvedImageVersion = Resolve-ImageVersion -Requested $ImageVersion
+
 Write-Host "Contexto actual: $context" -ForegroundColor Cyan
+Write-Host "Imágenes de aplicación: ${ImagePrefix}/*:${resolvedImageVersion}" -ForegroundColor Cyan
 Write-Host "Este script despliega el stack completo de ecommerce y no muestra las credenciales." -ForegroundColor DarkGray
 if (-not (Confirm-Step "¿Continuar con este contexto?")) {
     Write-Host "Despliegue cancelado."
@@ -184,28 +229,37 @@ try {
         Invoke-Kubectl @("apply", "-f", (Join-Path $k8sPath "kafka-service.yaml"))
         Invoke-Kubectl @("apply", "-f", (Join-Path $k8sPath "kafka-statefulset.yaml"))
         Invoke-Kubectl @("rollout", "status", "statefulset/kafka", "-n", $namespace, "--timeout=240s")
+        Write-Host "Creando topicos Kafka de contrato (ADR-0018)..." -ForegroundColor Cyan
+        kubectl delete job kafka-init-topics -n $namespace --ignore-not-found | Out-Null
+        Invoke-Kubectl @("apply", "-f", (Join-Path $k8sPath "kafka-topics-job.yaml"))
+        Invoke-Kubectl @("wait", "--for=condition=complete", "job/kafka-init-topics", "-n", $namespace, "--timeout=120s")
     }
     else {
         Write-Host "Kafka omitido; microservicios seguirán sin eventos asíncronos." -ForegroundColor Yellow
     }
 
     Write-Step 9 "Desplegando microservicios"
-    if (-not (Confirm-Step "¿Desplegar los microservicios ahora?")) {
+    if (-not (Confirm-Step "¿Desplegar los microservicios con tag ${resolvedImageVersion}?")) {
         Write-Host "Stack base desplegado. Microservicios pendientes."
         exit 0
     }
 
-    $services = @(
-        "auth-service",
-        "catalogo-service",
-        "pedidos-service",
-        "pagos-service",
-        "notificaciones-service",
-        "api-gateway"
+    $appWorkloads = @(
+        @{ Name = "auth-service"; Manifest = "auth" },
+        @{ Name = "catalogo-service"; Manifest = "catalogo" },
+        @{ Name = "pedidos-service"; Manifest = "pedidos" },
+        @{ Name = "pagos-service"; Manifest = "pagos" },
+        @{ Name = "notificaciones-service"; Manifest = "notificaciones" },
+        @{ Name = "api-gateway"; Manifest = "api-gateway" }
     )
-    foreach ($svc in $services) {
-        Invoke-Kubectl @("apply", "-f", (Join-Path $k8sPath "$svc-deployment.yaml"))
-        Invoke-Kubectl @("apply", "-f", (Join-Path $k8sPath "$svc-service.yaml"))
+    foreach ($app in $appWorkloads) {
+        $name = $app.Name
+        $manifest = $app.Manifest
+        Invoke-Kubectl @("apply", "-f", (Join-Path $k8sPath "$manifest-deployment.yaml"))
+        Invoke-Kubectl @("apply", "-f", (Join-Path $k8sPath "$manifest-service.yaml"))
+        $image = "${ImagePrefix}/${name}:${resolvedImageVersion}"
+        Invoke-Kubectl @("set", "image", "deployment/$name", "${name}=${image}", "-n", $namespace)
+        Write-Host "  $name -> $image" -ForegroundColor DarkGray
     }
 
     Write-Step 10 "Esperando a que todos los deployments estén listos"

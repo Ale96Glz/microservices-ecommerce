@@ -40,6 +40,26 @@ services:
       retries: 10
       start_period: 20s
 
+  kafka-init-topics:
+    image: bitnamilegacy/kafka:3.7.1
+    container_name: ecommerce-kafka-init-topics
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: "no"
+    environment:
+      KAFKA_BOOTSTRAP: kafka:29092
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        set -euo pipefail
+        BOOTSTRAP="$${KAFKA_BOOTSTRAP:-kafka:29092}"
+        for t in order-created order-created.DLT payment-processed payment-processed.DLT restock-requested restock-requested.DLT; do
+          kafka-topics.sh --bootstrap-server "$$BOOTSTRAP" --create --if-not-exists --topic "$$t" --partitions 1 --replication-factor 1
+          echo "OK topic $$t"
+        done
+        kafka-topics.sh --bootstrap-server "$$BOOTSTRAP" --list
+
   kafka-ui:
     image: provectuslabs/kafka-ui:v0.7.2
     container_name: ecommerce-kafka-ui
@@ -127,8 +147,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      kafka:
-        condition: service_healthy
+      kafka-init-topics:
+        condition: service_completed_successfully
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/catalogo_db
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
@@ -150,8 +170,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      kafka:
-        condition: service_healthy
+      kafka-init-topics:
+        condition: service_completed_successfully
       catalogo-service:
         condition: service_started
     environment:
@@ -177,8 +197,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      kafka:
-        condition: service_healthy
+      kafka-init-topics:
+        condition: service_completed_successfully
       pedidos-service:
         condition: service_started
     environment:
@@ -203,8 +223,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      kafka:
-        condition: service_healthy
+      kafka-init-topics:
+        condition: service_completed_successfully
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/notificaciones_db
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
