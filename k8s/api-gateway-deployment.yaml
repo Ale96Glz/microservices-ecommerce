@@ -55,6 +55,11 @@ spec:
                 secretKeyRef:
                   name: ecommerce-secrets
                   key: JWT_SECRET
+            - name: SPRING_PROFILES_ACTIVE
+              valueFrom:
+                configMapKeyRef:
+                  name: ecommerce-config
+                  key: SPRING_PROFILES_ACTIVE
             - name: GATEWAY_SECURITY_ENABLED
               valueFrom:
                 configMapKeyRef:
