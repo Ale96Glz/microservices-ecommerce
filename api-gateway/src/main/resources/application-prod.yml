@@ -1,0 +1,5 @@
+# El gateway no tiene datasource; solo JWT obligatorio y sin default de lab.
+jwt:
+  secret: ${JWT_SECRET}
+  filter:
+    enabled: false

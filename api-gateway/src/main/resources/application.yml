@@ -96,6 +96,8 @@ spring:
 
 jwt:
   secret: ${JWT_SECRET:change-me-to-a-long-random-secret-key-at-least-32-chars}
+  filter:
+    enabled: false
 
 gateway:
   security:
