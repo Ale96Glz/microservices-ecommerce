@@ -1,1 +1,2 @@
 com.aosorio.ecommerce.security.JwtSecurityAutoConfiguration
+com.aosorio.ecommerce.security.ProdSecretsAutoConfiguration
