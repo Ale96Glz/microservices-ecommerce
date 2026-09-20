@@ -82,6 +82,34 @@ function Confirm-Step {
     return [string]::IsNullOrWhiteSpace($answer) -or $answer -match "^(s|si|sí|y|yes)$"
 }
 
+function Test-SecretHasKey {
+    param(
+        [Parameter(Mandatory = $true)][string]$Key
+    )
+    $encoded = kubectl get secret ecommerce-secrets -n $namespace -o jsonpath="{.data.$Key}" 2>$null
+    return ($LASTEXITCODE -eq 0) -and -not [string]::IsNullOrWhiteSpace($encoded)
+}
+
+function Read-GrafanaCredentials {
+    $grafanaUser = Read-Host "Usuario admin de Grafana [admin]"
+    if ([string]::IsNullOrWhiteSpace($grafanaUser)) {
+        $grafanaUser = "admin"
+    }
+    $grafanaPassword = Read-RequiredSecret "Password admin de Grafana (no se mostrará)"
+    return @{ User = $grafanaUser; Password = $grafanaPassword }
+}
+
+function Merge-SecretStringData {
+    param(
+        [Parameter(Mandatory = $true)][hashtable]$Pairs
+    )
+    $payload = @{ stringData = $Pairs } | ConvertTo-Json -Compress -Depth 5
+    kubectl patch secret ecommerce-secrets -n $namespace --type merge -p $payload
+    if ($LASTEXITCODE -ne 0) {
+        throw "No se pudo actualizar ecommerce-secrets."
+    }
+}
+
 function Write-Step {
     param(
         [Parameter(Mandatory = $true)]
@@ -168,8 +196,30 @@ try {
     if ($secretExists) {
         $encodedDbUser = kubectl get secret ecommerce-secrets -n $namespace -o jsonpath='{.data.POSTGRES_USER}'
         $dbUser = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($encodedDbUser))
-        Write-Host "El Secret ecommerce-secrets ya existe; se conservará." -ForegroundColor Yellow
+        Write-Host "El Secret ecommerce-secrets ya existe; se conservará Postgres y JWT." -ForegroundColor Yellow
         Write-Host "Se usará el usuario almacenado en el Secret para verificar PostgreSQL." -ForegroundColor DarkGray
+
+        if (Test-SecretHasKey "GRAFANA_ADMIN_PASSWORD") {
+            Write-Host "Grafana: el Secret ya tiene GRAFANA_ADMIN_PASSWORD; no se pide de nuevo." -ForegroundColor DarkGray
+        }
+        else {
+            Write-Host "Grafana: faltan GRAFANA_ADMIN_USER / GRAFANA_ADMIN_PASSWORD en el Secret." -ForegroundColor Yellow
+            if (-not (Confirm-Step "¿Añadir las credenciales de Grafana al Secret?")) {
+                Write-Host "Grafana seguirá con admin/admin de fábrica hasta que existan esas claves." -ForegroundColor Yellow
+            }
+            else {
+                $grafana = Read-GrafanaCredentials
+                Merge-SecretStringData @{
+                    GRAFANA_ADMIN_USER     = $grafana.User
+                    GRAFANA_ADMIN_PASSWORD = $grafana.Password
+                }
+                Write-Host "Claves de Grafana añadidas a ecommerce-secrets." -ForegroundColor Green
+                & kubectl get deployment grafana -n $namespace -o name 2>$null | Out-Null
+                if ($LASTEXITCODE -eq 0) {
+                    Invoke-Kubectl @("rollout", "restart", "deployment/grafana", "-n", $namespace)
+                }
+            }
+        }
     }
     else {
         $dbUser = Read-Host "Usuario de PostgreSQL [ecommerce]"
@@ -179,6 +229,7 @@ try {
 
         $dbPassword = Read-RequiredSecret "Password de PostgreSQL (no se mostrará)"
         $jwtSecret = Read-RequiredSecret "JWT secret de mínimo 32 caracteres (no se mostrará)"
+        $grafana = Read-GrafanaCredentials
 
         if ($jwtSecret.Length -lt 32) {
             throw "El JWT secret debe tener al menos 32 caracteres."
@@ -193,6 +244,8 @@ try {
             --from-literal=POSTGRES_USER=$dbUser `
             --from-literal=POSTGRES_PASSWORD=$dbPassword `
             --from-literal=JWT_SECRET=$jwtSecret `
+            --from-literal=GRAFANA_ADMIN_USER=$($grafana.User) `
+            --from-literal=GRAFANA_ADMIN_PASSWORD=$($grafana.Password) `
             --dry-run=client -o yaml | kubectl apply -f -
 
         if ($LASTEXITCODE -ne 0) {
@@ -295,5 +348,6 @@ try {
 finally {
     $dbPassword = $null
     $jwtSecret = $null
+    $grafana = $null
     [GC]::Collect()
 }
