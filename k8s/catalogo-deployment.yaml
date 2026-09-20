@@ -51,6 +51,16 @@ spec:
                   key: SPRING_PROFILES_ACTIVE
             - name: JWT_FILTER_ENABLED
               value: "true"
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: ecommerce-config
+                  key: SPRING_KAFKA_BOOTSTRAP_SERVERS
+            - name: CATALOGO_KAFKA_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: ecommerce-config
+                  key: CATALOGO_KAFKA_ENABLED
             - name: ZIPKIN_ENDPOINT
               valueFrom:
                 configMapKeyRef:

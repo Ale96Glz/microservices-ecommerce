@@ -61,6 +61,11 @@ spec:
                 configMapKeyRef:
                   name: ecommerce-config
                   key: PAGOS_KAFKA_ENABLED
+            - name: PEDIDOS_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ecommerce-config
+                  key: PEDIDOS_SERVICE_URL
             - name: ZIPKIN_ENDPOINT
               valueFrom:
                 configMapKeyRef:
