@@ -1,0 +1,8 @@
+# Sin fallback de lab. Si JWT_SECRET o SPRING_DATASOURCE_PASSWORD faltan,
+# Spring no arranca. ProductionSecrets rechaza además change-me y ecommerce.
+jwt:
+  secret: ${JWT_SECRET}
+
+spring:
+  datasource:
+    password: ${SPRING_DATASOURCE_PASSWORD}
