@@ -290,5 +290,5 @@ decisión, no como olvido:
 | [0009](./adr/ADR-0009-secretos-sealed.md) | Vault/ESO pendiente; Sealed Secrets acoplado a la clave del cluster |
 | [0010](./adr/ADR-0010-rate-limiting-redis.md) | Redis sin password; fail-open; rate limit por IP |
 | [0011](./adr/ADR-0011-observabilidad.md) | Sampling 1.0; Zipkin sin persistencia; sin trace en Kafka |
-| [0013](./adr/ADR-0013-compensacion-stock-saga-outbox.md) | Compensación eventual; DLT sin reproceso automático |
+| [0013](./adr/ADR-0013-compensacion-stock-saga-outbox.md) / [0019](./adr/ADR-0019-outbox-ack-kafka.md) | Compensación eventual; DLT sin reproceso automático; ack de produce cubierto |
 | [0015](./adr/ADR-0015-arranque-ordenado-gateway-auth.md) | Orden Compose ≠ orden real en k8s (probes) |

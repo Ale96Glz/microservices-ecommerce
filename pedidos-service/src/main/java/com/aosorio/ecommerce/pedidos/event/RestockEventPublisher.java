@@ -9,6 +9,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 @Component
 public class RestockEventPublisher {
 
@@ -33,7 +37,15 @@ public class RestockEventPublisher {
             return;
         }
 
-        kafkaTemplate.send(TOPIC, event.eventId(), event);
+        try {
+            kafkaTemplate.send(TOPIC, event.eventId(), event).get(10, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Envío a Kafka de RestockRequested interrumpido", e);
+        } catch (ExecutionException | TimeoutException e) {
+            throw new IllegalStateException(
+                    "Kafka no confirmó RestockRequested " + event.eventId() + " del pedido " + event.pedidoId(), e);
+        }
         log.info("Evento RestockRequested {} publicado para pedido {}", event.eventId(), event.pedidoId());
     }
 }

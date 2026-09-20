@@ -23,6 +23,7 @@ Michael Nygard (Contexto → Decisión → Consecuencias).
 | [ADR-0016](./adr/ADR-0016-reintento-pago-rechazado.md) | Reintento de pago tras rechazo (intentos por pedido + reactivación explícita) | Aceptado |
 | [ADR-0017](./adr/ADR-0017-flyway-migraciones.md) | Migraciones versionadas con Flyway (primero pagos-service) | Aceptado |
 | [ADR-0018](./adr/ADR-0018-topicos-kafka-declarados.md) | Tópicos Kafka declarados antes de los consumidores | Aceptado |
+| [ADR-0019](./adr/ADR-0019-outbox-ack-kafka.md) | Outbox marca PUBLICADO solo con ack de Kafka | Aceptado |
 
 ## Guías operativas
 

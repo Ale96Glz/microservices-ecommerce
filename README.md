@@ -70,8 +70,9 @@ Pedido creado
 Para garantizar consistencia entre la base de datos y Kafka, cada servicio productor
 guarda un evento en una tabla `outbox_event` dentro de la misma transacción que
 persiste el dato de negocio. Un publicador programado (`@Scheduled`) lee los eventos
-pendientes, los publica en Kafka y los marca como `PUBLICADO`. Si el envío falla, el
-evento permanece `PENDIENTE` y se reintenta en el siguiente ciclo.
+pendientes, los publica en Kafka **esperando el ack del broker** y los marca como
+`PUBLICADO`. Si el envío falla o Kafka no confirma, el evento permanece `PENDIENTE`
+y se reintenta en el siguiente ciclo.
 
 Los consumidores (pagos y notificaciones) reintentan los eventos fallidos con
 backoff fijo (3 intentos por defecto) y, al agotarlos, publican el mensaje en

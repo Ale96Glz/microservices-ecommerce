@@ -59,10 +59,10 @@ expect_retryable() { # para usar dentro de wait_until: devuelve 1 (reintenta) en
   [ "$1" = "$2" ] || { echo "  retry: HTTP esperado $1, obtenido $2" >&2; return 1; }
 }
 
-expect_retryable_srv() { # como expect_retryable, pero los 5xx (servicio aun arrancando) reintentan
+expect_retryable_srv() { # como expect_retryable, pero 429 y 5xx (arrancando / rate limit) reintentan
   case "$2" in
     "$1") return 0 ;;
-    500|502|503|504) return 1 ;;
+    429|500|502|503|504) return 1 ;;
     *) fail "HTTP esperado $1, obtenido $2 :: $(cat "$BODY_TMP")" ;;
   esac
 }

@@ -48,9 +48,11 @@ El auto-create tampoco garantiza particiones, factor de replicación ni DLT.
 3. **Auto-create** permanece `true` en lab como red de seguridad para tópicos
    no listados. En un endurecimiento posterior de prod se pone `false` cuando
    la lista esté completa y el Job sea gate de deploy.
-4. **Replay** de un outbox ya `PUBLICADO` (mensaje perdido) **no** entra en
-   este ADR: es operación (reset a `PENDIENTE` o DLT). El bootstrap evita el
-   caso *tópico ausente*, no sustituye un bus de reproceso.
+4. **Ack de produce:** el outbox solo pasa a `PUBLICADO` cuando
+   `KafkaTemplate.send(...).get(...)` confirma (ADR-0019). Un `UNKNOWN_TOPIC`
+   deja la fila `PENDIENTE` y se reintenta. **Replay** de un outbox ya
+   `PUBLICADO` (mensaje perdido tras un ack) sigue siendo operación (reset a
+   `PENDIENTE` o DLT).
 
 ## Consecuencias
 

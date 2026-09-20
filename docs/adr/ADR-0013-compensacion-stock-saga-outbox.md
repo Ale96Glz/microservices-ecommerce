@@ -90,8 +90,9 @@ listener** (`PedidoServiceImpl.procesarResultadoPago` → rama `RECHAZADO` →
 
 ### Positivas
 
-- **Compensación garantizada**: la intención de restock es durable (outbox) y se
-  publica hasta que lo logra; no depende de catálogo en el momento del rechazo.
+- **Compensación garantizada**: la intención de restock es durable (outbox) y
+  solo se marca `PUBLICADO` cuando Kafka confirma el produce (ADR-0019); no
+  depende de catálogo en el momento del rechazo.
 - **Idempotencia real**: la tabla `restock_event` (PK `eventId`) hace que reintentos,
   DLT o re-entrega apliquen la reposición **una sola vez** por intención y, desde el
   ADR-0016, una sola vez por **ciclo** de un pedido.

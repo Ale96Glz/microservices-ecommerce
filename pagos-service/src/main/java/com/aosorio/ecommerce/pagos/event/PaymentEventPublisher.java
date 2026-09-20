@@ -9,6 +9,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 @Component
 public class PaymentEventPublisher {
 
@@ -32,7 +36,15 @@ public class PaymentEventPublisher {
             return;
         }
 
-        kafkaTemplate.send(TOPIC, event.pagoId().toString(), event);
+        try {
+            kafkaTemplate.send(TOPIC, event.pagoId().toString(), event).get(10, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Envío a Kafka de PaymentProcessed interrumpido", e);
+        } catch (ExecutionException | TimeoutException e) {
+            throw new IllegalStateException(
+                    "Kafka no confirmó PaymentProcessed del pago " + event.pagoId(), e);
+        }
         log.info("Evento PaymentProcessed publicado para pago {}", event.pagoId());
     }
 }
