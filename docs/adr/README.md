@@ -22,6 +22,13 @@ Michael Nygard (Contexto → Decisión → Consecuencias).
 | [ADR-0015](./adr/ADR-0015-arranque-ordenado-gateway-auth.md) | Arranque ordenado del API Gateway (gateway espera a auth y redis sanos) | Aceptado |
 | [ADR-0016](./adr/ADR-0016-reintento-pago-rechazado.md) | Reintento de pago tras rechazo (intentos por pedido + reactivación explícita) | Aceptado |
 
+## Guías operativas
+
+| Guía | Contenido |
+|---|---|
+| [Escenarios de compra](../escenarios-de-compra.md) | Flujos E2E alineados con el smoke |
+| [Camino a producción](../produccion.md) | Veredicto de madurez y plan de endurecimiento |
+
 ## Diagramas C4 (Modelo C4)
 
 | Nivel | Diagrama |

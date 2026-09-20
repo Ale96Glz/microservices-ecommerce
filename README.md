@@ -342,7 +342,9 @@ gateway solo acepta tráfico cuando auth-service y redis están sanos
 (healthchecks en Compose), evitando la carrera de arranque. Los escenarios
 completos (compra aprobada, rechazo + compensación, cancelación manual y
 códigos de error) están documentados paso a paso en
-[`docs/escenarios-de-compra.md`](./docs/escenarios-de-compra.md). Detalles de
+[`docs/escenarios-de-compra.md`](./docs/escenarios-de-compra.md). El veredicto
+de madurez y el plan de endurecimiento (secretos, CORS, migraciones, TLS,
+backups) están en [`docs/produccion.md`](./docs/produccion.md). Detalles de
 la decisión en
 [ADR-0012](./docs/adr/ADR-0012-ci-y-smoke-test.md),
 [ADR-0013](./docs/adr/ADR-0013-compensacion-stock-saga-outbox.md),
