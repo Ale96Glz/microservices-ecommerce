@@ -103,10 +103,23 @@ function Merge-SecretStringData {
     param(
         [Parameter(Mandatory = $true)][hashtable]$Pairs
     )
-    $payload = @{ stringData = $Pairs } | ConvertTo-Json -Compress -Depth 5
-    kubectl patch secret ecommerce-secrets -n $namespace --type merge -p $payload
-    if ($LASTEXITCODE -ne 0) {
-        throw "No se pudo actualizar ecommerce-secrets."
+    $stringData = New-Object PSCustomObject
+    foreach ($key in $Pairs.Keys) {
+        $stringData | Add-Member -NotePropertyName $key -NotePropertyValue ([string]$Pairs[$key])
+    }
+    $body = New-Object PSCustomObject
+    $body | Add-Member -NotePropertyName stringData -NotePropertyValue $stringData
+    $json = $body | ConvertTo-Json -Compress -Depth 5
+    $file = Join-Path ([IO.Path]::GetTempPath()) ("ecommerce-secret-patch-{0}.json" -f [guid]::NewGuid().ToString("n"))
+    try {
+        [IO.File]::WriteAllText($file, $json, [Text.UTF8Encoding]::new($false))
+        kubectl patch secret ecommerce-secrets -n $namespace --type merge --patch-file $file
+        if ($LASTEXITCODE -ne 0) {
+            throw "No se pudo actualizar ecommerce-secrets."
+        }
+    }
+    finally {
+        Remove-Item -LiteralPath $file -Force -ErrorAction SilentlyContinue
     }
 }
 
