@@ -3,6 +3,7 @@ services:
     image: postgres:16-alpine
     container_name: ecommerce-postgres
     environment:
+      # Defaults de lab; el profile prod (k8s) no acepta password ecommerce.
       POSTGRES_USER: ${POSTGRES_USER:-ecommerce}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ecommerce}
       POSTGRES_DB: ${POSTGRES_DB:-postgres}
