@@ -3,3 +3,29 @@ jwt:
   secret: ${JWT_SECRET}
   filter:
     enabled: false
+
+spring:
+  cloud:
+    gateway:
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOriginPatterns:
+              - http://localhost:*
+              - http://127.0.0.1:*
+              - https://ecommerce.local
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - PATCH
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus

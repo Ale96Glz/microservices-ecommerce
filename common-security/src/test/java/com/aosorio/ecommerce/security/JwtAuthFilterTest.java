@@ -69,6 +69,17 @@ class JwtAuthFilterTest {
     }
 
     @Test
+    void swaggerYH2NoSonPublicosPorDefecto() throws Exception {
+        when(request.getRequestURI()).thenReturn("/swagger-ui/index.html");
+        when(request.getHeader("Authorization")).thenReturn(null);
+
+        filter.doFilter(request, response, chain);
+
+        verify(chain, never()).doFilter(request, response);
+        verify(response).setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+    }
+
+    @Test
     void rutaPublicaConfiguradaPorPrefijoNoRequiereToken() throws Exception {
         when(request.getRequestURI()).thenReturn("/api/v1/abierta/detalle");
 

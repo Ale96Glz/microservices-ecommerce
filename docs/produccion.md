@@ -116,31 +116,15 @@ las claves nuevas.
 
 ### 4. CORS
 
-**Hoy:** en `api-gateway` `allowedOriginPatterns: "*"` con
-`allowCredentials: true`. Cualquier origen puede usar credenciales del
-navegador.
-
-**Cambio:** lista explícita `GATEWAY_CORS_ORIGINS=https://app.tudominio`. No
-usar `*` si hay cookies/credenciales.
-
-**Archivos:** `api-gateway/src/main/resources/application.yml`,
-`k8s/configmap.yaml`.
+**Hoy / estado:** en `prod` el gateway ya no usa `*`. Orígenes:
+`http://localhost:*`, `http://127.0.0.1:*`, `https://ecommerce.local`.
+Compose (profile por defecto) sigue con `*` para lab.
 
 ### 5. Actuator, Swagger y consola H2
 
-**Hoy:** `JwtAuthFilter` marca como públicos `/actuator/prometheus`,
-`/swagger-ui`, `/v3/api-docs`, `/h2-console`. Los servicios exponen
-`health,info,prometheus` y `h2-console.enabled: true`.
-
-**Cambio en prod:**
-
-- H2 y Swagger desactivados.
-- Actuator: solo `health` / `liveness` / `readiness` hacia el cluster.
-- Prometheus scrape por ClusterIP (red interna), no por Ingress.
-- `show-sql: false`.
-
-**Archivos:** `common-security/.../JwtAuthFilter.java`, `application.yml` de
-cada servicio, profile `prod`.
+**Hoy / estado:** en `prod`, H2 y Swagger apagados; JWT no deja públicos
+`/swagger-ui` ni `/h2-console` (sí health y prometheus para probes/scrape).
+`show-sql: false`. Laboratorio sin cambios.
 
 ### 6. Redis (rate limiting)
 

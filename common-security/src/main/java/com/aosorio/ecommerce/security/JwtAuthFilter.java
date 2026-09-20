@@ -21,10 +21,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             "/actuator/health",
             "/actuator/health/liveness",
             "/actuator/health/readiness",
-            "/actuator/prometheus",
-            "/swagger-ui",
-            "/v3/api-docs",
-            "/h2-console"
+            "/actuator/prometheus"
     );
 
     private final JwtValidator jwtValidator;

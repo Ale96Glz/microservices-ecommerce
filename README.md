@@ -240,24 +240,16 @@ Componentes) están disponibles en [`docs/`](./docs/adr/README.md).
 
 ## Documentación de API
 
-La documentación Swagger está disponible en cada servicio, pero en el entorno
-por defecto **solo el API Gateway publica puerto al host**. Para ver el Swagger
-de un microservicio interno hay que exponerlo puntualmente:
+En **laboratorio** (Compose, profile por defecto) Swagger está en cada
+servicio. En **Kubernetes** (`SPRING_PROFILES_ACTIVE=prod`) Swagger y la
+consola H2 están desactivados.
+
+Para ver Swagger en lab hay que publicar el puerto del servicio, p. ej.
+Compose con `CATALOGO_SERVICE_PORT=8082` o:
 
 ```bash
-# Ejemplo: Swagger de catálogo
-kubectl port-forward svc/catalogo-service -n ecommerce 8082:8080
-```
-
-```text
-http://localhost:8082/swagger-ui.html
-```
-
-En Docker Compose local se puede habilitar temporalmente el puerto
-(`CATALOGO_SERVICE_PORT=8082`) o entrar al contenedor:
-
-```bash
-docker exec -it ecommerce-catalogo sh
+# Solo tiene sentido si el servicio no usa el profile prod
+kubectl port-forward svc/catalogo-service -n ecommerce 8082:8082
 ```
 
 ## HTTPS (TLS por defecto en el Ingress)

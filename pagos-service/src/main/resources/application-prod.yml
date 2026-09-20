@@ -1,12 +1,30 @@
 jwt:
   secret: ${JWT_SECRET}
+  filter:
+    public-paths: ${JWT_PUBLIC_PATHS:}
 
 spring:
   datasource:
     password: ${SPRING_DATASOURCE_PASSWORD}
+  h2:
+    console:
+      enabled: false
   jpa:
     hibernate:
       ddl-auto: validate
+    show-sql: false
   flyway:
     enabled: true
     baseline-on-migrate: true
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
