@@ -15,9 +15,21 @@ public final class ProductionSecrets {
     }
 
     public static void validate(String jwtSecret, String datasourceUrl, String datasourcePassword) {
+        validate(jwtSecret, datasourceUrl, datasourcePassword, null, false);
+    }
+
+    public static void validate(
+            String jwtSecret,
+            String datasourceUrl,
+            String datasourcePassword,
+            String redisPassword,
+            boolean requireRedisPassword) {
         validateJwt(jwtSecret);
         if (usesPostgres(datasourceUrl)) {
             validatePostgresPassword(datasourcePassword);
+        }
+        if (requireRedisPassword) {
+            validateRedisPassword(redisPassword);
         }
     }
 
@@ -44,6 +56,13 @@ public final class ProductionSecrets {
         if (INSECURE_POSTGRES_DEFAULT.equals(password)) {
             throw new IllegalStateException(
                     "Profile prod: el password de Postgres no puede ser el default de lab (ecommerce)");
+        }
+    }
+
+    static void validateRedisPassword(String password) {
+        if (password == null || password.isBlank()) {
+            throw new IllegalStateException(
+                    "Profile prod: SPRING_DATA_REDIS_PASSWORD es obligatorio");
         }
     }
 

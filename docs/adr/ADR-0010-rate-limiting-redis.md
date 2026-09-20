@@ -43,10 +43,11 @@ La Agenda Fase 3 exige agregar rate limiting. Se necesita una solución que:
 1. **Adoptar RedisRateLimiter en el api-gateway** (opción 1):
 
    - Se agrega **Redis** al entorno:
-     - `docker-compose.yml`: servicio `redis` (puerto mapeado a 6379 host para
-       admin/dev, igual patrón que PostgreSQL/Kafka).
+     - `docker-compose.yml`: servicio `redis` (puerto mapeado a 127.0.0.1:6379
+       en lab; password opcional via `REDIS_PASSWORD`).
      - `k8s/`: `redis-deployment.yaml` + `redis-service.yaml` (ClusterIP,
-       replicas=1 en dev; sin password local, documentado como mejora).
+       replicas=1). En Kubernetes Redis arranca con `--requirepass` y el
+       password vive en `ecommerce-secrets` (`REDIS_PASSWORD`).
      - Config de conexión por env: `SPRING_DATA_REDIS_HOST`,
        `SPRING_DATA_REDIS_PORT`, `SPRING_DATA_REDIS_PASSWORD`.
    - **Dependencias** en `api-gateway/pom.xml`:
@@ -90,12 +91,12 @@ La Agenda Fase 3 exige agregar rate limiting. Se necesita una solución que:
 
 - **Nueva infraestructura (Redis)**: hay que operarla en docker-compose y k8s,
   y perdura como componente del stack. Consume memoria (pequeña en dev).
-- **Redis es un punto de falla del rate limiter**: si Redis no responde, el
-  filtro rechaza o permite según la política de Spring (por defecto falla en
-  modo abierto si `fail-open` está configurado). Se documenta la elección:
-  **fail-open** (permitir cuando Redis cae) para no bloquear el negocio en dev,
-  con nota de que en producción se evalúa fail-closed.
+- **Redis es un punto de falla del rate limiter**: Spring Cloud Gateway 4.1
+  `RedisRateLimiter` falla **abierto** (permite si Redis no responde). En
+  laboratorio eso se mantiene. En profile **`prod`**, `RedisFailClosedFilter`
+  sondea Redis y responde **503** al API si no hay conexión (fail-closed);
+  `/actuator` queda fuera para probes.
 - **Identificación imperfecta**: el KeyResolver por IP agrupa a todos los
   usuarios del mismo NAT/proxy; la granularidad por JWT/usuario queda pendiente.
-- **Redis sin password en local**: aceptado para dev; en producción se protege
-  (password vía Secret y red interna, alineado al ADR-0009).
+- **Redis en lab puede ir sin password**; en Kubernetes el password es
+  obligatorio (`REDIS_PASSWORD` + `ProductionSecrets` en el gateway).

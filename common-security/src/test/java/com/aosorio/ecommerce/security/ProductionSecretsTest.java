@@ -64,4 +64,17 @@ class ProductionSecretsTest {
         assertThatCode(() -> ProductionSecrets.validate(OK_JWT, PG_URL, "s3gura-no-lab"))
                 .doesNotThrowAnyException();
     }
+
+    @Test
+    void redisObligatorioRechazaPasswordVacio() {
+        assertThatThrownBy(() -> ProductionSecrets.validate(OK_JWT, "", "", "  ", true))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("SPRING_DATA_REDIS_PASSWORD");
+    }
+
+    @Test
+    void redisObligatorioConPasswordPasa() {
+        assertThatCode(() -> ProductionSecrets.validate(OK_JWT, "", "", "redis-s3creto", true))
+                .doesNotThrowAnyException();
+    }
 }

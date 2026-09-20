@@ -1,10 +1,17 @@
-# El gateway no tiene datasource; solo JWT obligatorio y sin default de lab.
+# El gateway no tiene datasource; JWT y Redis obligatorios y sin default de lab.
+ecommerce:
+  prod:
+    require-redis-password: true
+
 jwt:
   secret: ${JWT_SECRET}
   filter:
     enabled: false
 
 spring:
+  data:
+    redis:
+      password: ${SPRING_DATA_REDIS_PASSWORD}
   cloud:
     gateway:
       globalcors:

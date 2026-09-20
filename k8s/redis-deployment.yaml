@@ -21,6 +21,16 @@ spec:
         - name: redis
           image: redis:7-alpine
           imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - exec redis-server --requirepass "$REDIS_PASSWORD"
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ecommerce-secrets
+                  key: REDIS_PASSWORD
           ports:
             - name: redis
               containerPort: 6379
@@ -29,7 +39,7 @@ spec:
               command:
                 - sh
                 - -c
-                - redis-cli ping | grep PONG
+                - REDISCLI_AUTH="$REDIS_PASSWORD" redis-cli ping | grep PONG
             initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 5
@@ -39,7 +49,7 @@ spec:
               command:
                 - sh
                 - -c
-                - redis-cli ping | grep PONG
+                - REDISCLI_AUTH="$REDIS_PASSWORD" redis-cli ping | grep PONG
             initialDelaySeconds: 20
             periodSeconds: 20
             timeoutSeconds: 5

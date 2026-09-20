@@ -188,11 +188,13 @@ Actualmente ejecuta:
 1. Validación del contexto y los nodos.
 2. Creación del namespace `ecommerce`.
 3. Aplicación del `ConfigMap`.
-4. Aplicación del `SealedSecret` versionado y verificación del Secret real.
+4. Aplicación del `SealedSecret` versionado y, si falta, petición de
+   `REDIS_PASSWORD` para el Secret real.
 5. Despliegue de PostgreSQL y su volumen persistente.
 6. Verificación de las cinco bases de datos.
 
-Los secretos (`POSTGRES_USER`, `POSTGRES_PASSWORD`, `JWT_SECRET`) están
+Los secretos (`POSTGRES_USER`, `POSTGRES_PASSWORD`, `JWT_SECRET`,
+`REDIS_PASSWORD`) están
 **cifrados con Kubernetes Sealed Secrets** (ADR-0009): el archivo
 `k8s/sealed-ecommerce-secrets.yaml` se versiona en git y el controller
 `sealed-secrets` (namespace `kube-system`) lo descifra al aplicar. Las
@@ -384,7 +386,7 @@ la decisión en
 - [x] Evitar la exposición directa de los puertos internos (ADR-0007).
 - [x] Configurar HTTPS (ADR-0008, TLS self-signed por Ingress).
 - [x] Gestión segura de secretos (ADR-0009, Kubernetes Sealed Secrets).
-- [x] Agregar rate limiting (ADR-0010, RedisRateLimiter en el API Gateway).
+- [x] Agregar rate limiting (ADR-0010, RedisRateLimiter; fail-closed en `prod`).
 - [x] Incorporar logs estructurados, métricas y trazabilidad.
 
 ### Fase 4 — Calidad

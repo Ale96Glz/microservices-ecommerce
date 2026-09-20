@@ -14,7 +14,10 @@ public class ProdSecretsAutoConfiguration {
     ApplicationRunner productionSecretsGuard(
             @Value("${jwt.secret:}") String jwtSecret,
             @Value("${spring.datasource.url:}") String datasourceUrl,
-            @Value("${spring.datasource.password:}") String datasourcePassword) {
-        return args -> ProductionSecrets.validate(jwtSecret, datasourceUrl, datasourcePassword);
+            @Value("${spring.datasource.password:}") String datasourcePassword,
+            @Value("${spring.data.redis.password:}") String redisPassword,
+            @Value("${ecommerce.prod.require-redis-password:false}") boolean requireRedisPassword) {
+        return args -> ProductionSecrets.validate(
+                jwtSecret, datasourceUrl, datasourcePassword, redisPassword, requireRedisPassword);
     }
 }

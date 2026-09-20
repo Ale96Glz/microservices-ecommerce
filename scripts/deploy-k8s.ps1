@@ -65,6 +65,55 @@ function Confirm-Step {
     return [string]::IsNullOrWhiteSpace($answer) -or $answer -match "^(s|si|sí|y|yes)$"
 }
 
+function Test-SecretHasKey {
+    param(
+        [Parameter(Mandatory = $true)][string]$Key
+    )
+    $encoded = kubectl get secret ecommerce-secrets -n $namespace -o jsonpath="{.data.$Key}" 2>$null
+    return ($LASTEXITCODE -eq 0) -and -not [string]::IsNullOrWhiteSpace($encoded)
+}
+
+function Merge-SecretStringData {
+    param(
+        [Parameter(Mandatory = $true)][hashtable]$Pairs
+    )
+    $stringData = New-Object PSCustomObject
+    foreach ($key in $Pairs.Keys) {
+        $stringData | Add-Member -NotePropertyName $key -NotePropertyValue ([string]$Pairs[$key])
+    }
+    $body = New-Object PSCustomObject
+    $body | Add-Member -NotePropertyName stringData -NotePropertyValue $stringData
+    $json = $body | ConvertTo-Json -Compress -Depth 5
+    $file = Join-Path ([IO.Path]::GetTempPath()) ("ecommerce-secret-patch-{0}.json" -f [guid]::NewGuid().ToString("n"))
+    try {
+        [IO.File]::WriteAllText($file, $json, [Text.UTF8Encoding]::new($false))
+        kubectl patch secret ecommerce-secrets -n $namespace --type merge --patch-file $file
+        if ($LASTEXITCODE -ne 0) {
+            throw "No se pudo actualizar ecommerce-secrets."
+        }
+    }
+    finally {
+        Remove-Item -LiteralPath $file -Force -ErrorAction SilentlyContinue
+    }
+}
+
+function Ensure-RedisPassword {
+    if (Test-SecretHasKey "REDIS_PASSWORD") {
+        Write-Host "Redis: el Secret ya tiene REDIS_PASSWORD; no se pide de nuevo." -ForegroundColor DarkGray
+        return
+    }
+    Write-Host "Redis: falta REDIS_PASSWORD en el Secret (requirepass + gateway)." -ForegroundColor Yellow
+    if (-not (Confirm-Step "¿Añadir REDIS_PASSWORD al Secret?")) {
+        throw "No se puede desplegar Redis en Kubernetes sin REDIS_PASSWORD."
+    }
+    $script:redisPassword = Read-RequiredSecret "Password de Redis (no se mostrará)"
+    Merge-SecretStringData @{
+        REDIS_PASSWORD = $script:redisPassword
+    }
+    Write-Host "REDIS_PASSWORD añadido a ecommerce-secrets." -ForegroundColor Green
+    Write-Host "Tras este cambio, sella de nuevo: .\scripts\seal-ecommerce-secrets.ps1" -ForegroundColor DarkGray
+}
+
 function Write-Step {
     param(
         [Parameter(Mandatory = $true)]
@@ -127,6 +176,7 @@ try {
 
         $dbPassword = Read-RequiredSecret "Password de PostgreSQL (no se mostrará)"
         $jwtSecret = Read-RequiredSecret "JWT secret de mínimo 32 caracteres (no se mostrará)"
+        $redisPassword = Read-RequiredSecret "Password de Redis (no se mostrará)"
 
         if ($jwtSecret.Length -lt 32) {
             throw "El JWT secret debe tener al menos 32 caracteres."
@@ -141,6 +191,7 @@ try {
             --from-literal=POSTGRES_USER=$dbUser `
             --from-literal=POSTGRES_PASSWORD=$dbPassword `
             --from-literal=JWT_SECRET=$jwtSecret `
+            --from-literal=REDIS_PASSWORD=$redisPassword `
             --dry-run=client -o yaml | kubectl apply -f -
 
         if ($LASTEXITCODE -ne 0) {
@@ -155,6 +206,7 @@ try {
     $encodedDbUser = kubectl get secret ecommerce-secrets -n $namespace -o jsonpath='{.data.POSTGRES_USER}'
     $dbUser = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($encodedDbUser))
     Write-Host "Se usará el usuario almacenado en el Secret para verificar PostgreSQL." -ForegroundColor DarkGray
+    Ensure-RedisPassword
 
     Write-Step 5 "Desplegando PostgreSQL"
     if (-not (Confirm-Step "¿Desplegar PostgreSQL ahora?")) {
@@ -185,5 +237,6 @@ try {
 finally {
     $dbPassword = $null
     $jwtSecret = $null
+    $redisPassword = $null
     [GC]::Collect()
 }

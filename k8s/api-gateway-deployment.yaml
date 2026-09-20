@@ -75,6 +75,11 @@ spec:
                 configMapKeyRef:
                   name: ecommerce-config
                   key: SPRING_DATA_REDIS_PORT
+            - name: SPRING_DATA_REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ecommerce-secrets
+                  key: REDIS_PASSWORD
             - name: GATEWAY_RATE_LIMIT_ENABLED
               valueFrom:
                 configMapKeyRef:

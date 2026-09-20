@@ -4,7 +4,7 @@
 # Compatible con Windows PowerShell 5.1 y PowerShell 7 en Windows, Linux y macOS.
 # Requiere kubectl (y git, si no pasas -ImageVersion) en el PATH.
 # Despliega el stack completo: namespace, ConfigMap, Secret, PostgreSQL, Kafka,
-# microservicios (auth, catalogo, pedidos, pagos, notificaciones, api-gateway) e Ingress.
+# Redis, microservicios (auth, catalogo, pedidos, pagos, notificaciones, api-gateway) e Ingress.
 #
 # Las imágenes de app usan el último tag git v* (sin la v), p. ej. v1.1.1 -> :1.1.1.
 # Override:  .\scripts\deploy-k8s-full.ps1 -ImageVersion 1.1.1
@@ -21,6 +21,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $k8sPath = Join-Path $repoRoot "k8s"
 
 $deployments = @(
+    "redis",
     "auth-service",
     "catalogo-service",
     "pedidos-service",
@@ -233,6 +234,27 @@ try {
                 }
             }
         }
+
+        if (Test-SecretHasKey "REDIS_PASSWORD") {
+            Write-Host "Redis: el Secret ya tiene REDIS_PASSWORD; no se pide de nuevo." -ForegroundColor DarkGray
+        }
+        else {
+            Write-Host "Redis: falta REDIS_PASSWORD en el Secret (requirepass + gateway)." -ForegroundColor Yellow
+            if (-not (Confirm-Step "¿Añadir REDIS_PASSWORD al Secret?")) {
+                throw "No se puede desplegar Redis en Kubernetes sin REDIS_PASSWORD."
+            }
+            $redisPassword = Read-RequiredSecret "Password de Redis (no se mostrará)"
+            Merge-SecretStringData @{
+                REDIS_PASSWORD = $redisPassword
+            }
+            Write-Host "REDIS_PASSWORD añadido a ecommerce-secrets." -ForegroundColor Green
+            foreach ($dep in @("redis", "api-gateway")) {
+                & kubectl get deployment $dep -n $namespace -o name 2>$null | Out-Null
+                if ($LASTEXITCODE -eq 0) {
+                    Invoke-Kubectl @("rollout", "restart", "deployment/$dep", "-n", $namespace)
+                }
+            }
+        }
     }
     else {
         $dbUser = Read-Host "Usuario de PostgreSQL [ecommerce]"
@@ -243,6 +265,7 @@ try {
         $dbPassword = Read-RequiredSecret "Password de PostgreSQL (no se mostrará)"
         $jwtSecret = Read-RequiredSecret "JWT secret de mínimo 32 caracteres (no se mostrará)"
         $grafana = Read-GrafanaCredentials
+        $redisPassword = Read-RequiredSecret "Password de Redis (no se mostrará)"
 
         if ($jwtSecret.Length -lt 32) {
             throw "El JWT secret debe tener al menos 32 caracteres."
@@ -259,6 +282,7 @@ try {
             --from-literal=JWT_SECRET=$jwtSecret `
             --from-literal=GRAFANA_ADMIN_USER=$($grafana.User) `
             --from-literal=GRAFANA_ADMIN_PASSWORD=$($grafana.Password) `
+            --from-literal=REDIS_PASSWORD=$redisPassword `
             --dry-run=client -o yaml | kubectl apply -f -
 
         if ($LASTEXITCODE -ne 0) {
@@ -304,11 +328,18 @@ try {
         Write-Host "Kafka omitido; microservicios seguirán sin eventos asíncronos." -ForegroundColor Yellow
     }
 
-    Write-Step 9 "Desplegando microservicios"
-    if (-not (Confirm-Step "¿Desplegar los microservicios con tag ${resolvedImageVersion}?")) {
-        Write-Host "Stack base desplegado. Microservicios pendientes."
+    Write-Step 9 "Desplegando Redis y microservicios"
+    if (-not (Confirm-Step "¿Desplegar Redis y los microservicios con tag ${resolvedImageVersion}?")) {
+        Write-Host "Stack base desplegado. Redis y microservicios pendientes."
         exit 0
     }
+
+    if (-not (Test-SecretHasKey "REDIS_PASSWORD")) {
+        throw "Falta REDIS_PASSWORD en ecommerce-secrets."
+    }
+    Invoke-Kubectl @("apply", "--server-side", "--force-conflicts", "-f", (Join-Path $k8sPath "redis-service.yaml"))
+    Invoke-Kubectl @("apply", "--server-side", "--force-conflicts", "-f", (Join-Path $k8sPath "redis-deployment.yaml"))
+    Invoke-Kubectl @("rollout", "status", "deployment/redis", "-n", $namespace, "--timeout=120s")
 
     $appWorkloads = @(
         @{ Name = "auth-service"; Manifest = "auth" },
@@ -362,5 +393,6 @@ finally {
     $dbPassword = $null
     $jwtSecret = $null
     $grafana = $null
+    $redisPassword = $null
     [GC]::Collect()
 }

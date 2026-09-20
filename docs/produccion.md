@@ -20,8 +20,7 @@ sin superficie HTTP innecesaria, con schema versionado, copias de seguridad y
 red/TLS acordes a un cluster de verdad.
 
 Un **smoke E2E en verde** confirma el camino feliz y la saga de compensación
-contra las imágenes publicadas. **No** cubre secretos, TLS, backups, HA,
-fail-closed de Redis ni el cierre de Actuator/Swagger.
+contra las imágenes publicadas. **No** cubre TLS, backups, HA ni SASL de Kafka.
 
 ## Lo que ya se puede conservar
 
@@ -128,19 +127,19 @@ Compose (profile por defecto) sigue con `*` para lab.
 
 ### 6. Redis (rate limiting)
 
-**Hoy:** Redis sin password, puerto `6379` publicado en Compose, rate limit
-por IP (`GatewayRateLimitConfig`), política **fail-open** documentada para
-dev (ADR-0010).
+**Hoy / estado:** Redis con `--requirepass` en Kubernetes (`REDIS_PASSWORD` en
+`ecommerce-secrets`). El gateway recibe `SPRING_DATA_REDIS_PASSWORD`. En
+`prod`, `RedisFailClosedFilter` responde 503 si Redis no responde (el
+`RedisRateLimiter` 4.1 sigue siendo fail-open internamente). Compose de lab
+sigue opcionalmente sin password; el puerto se publica solo en `127.0.0.1`.
 
-**Cambio:**
-
-- `--requirepass` + `SPRING_DATA_REDIS_PASSWORD` en el Secret.
-- No publicar `6379` al host en ningún entorno que no sea lab local.
-- En prod: **fail-closed** (si Redis cae → 503, no tráfico libre).
-- Opcional: KeyResolver por `sub` del JWT además de IP (NAT comparte IP).
+**Pendiente:** KeyResolver por `sub` del JWT además de IP (NAT comparte IP).
+Tras añadir `REDIS_PASSWORD` al Secret vivo, volver a sellar
+(`scripts/seal-ecommerce-secrets.ps1`) para que el SealedSecret no pise la clave.
 
 **Archivos:** `docker-compose.yml`, `k8s/redis-deployment.yaml`,
-`api-gateway` (filtro y `application.yml`), Secret.
+`k8s/api-gateway-deployment.yaml`, `api-gateway` (`RedisFailClosedFilter`,
+`application-prod.yml`), `scripts/deploy-k8s-full.ps1`, Secret.
 
 ### 7. Kafka
 
@@ -275,7 +274,7 @@ decisión, no como olvido:
 | [0007](./adr/ADR-0007-exposicion-puertos-internos.md) | NetworkPolicies no efectivas en kindnet |
 | [0008](./adr/ADR-0008-https-ingress.md) | TLS self-signed; cert-manager pendiente |
 | [0009](./adr/ADR-0009-secretos-sealed.md) | Vault/ESO pendiente; Sealed Secrets acoplado a la clave del cluster |
-| [0010](./adr/ADR-0010-rate-limiting-redis.md) | Redis sin password; fail-open; rate limit por IP |
+| [0010](./adr/ADR-0010-rate-limiting-redis.md) | Rate limit por IP; RedisRateLimiter nativo sigue fail-open (mitigado en prod) |
 | [0011](./adr/ADR-0011-observabilidad.md) | Sampling 1.0; Zipkin sin persistencia; sin trace en Kafka |
 | [0013](./adr/ADR-0013-compensacion-stock-saga-outbox.md) / [0019](./adr/ADR-0019-outbox-ack-kafka.md) | Compensación eventual; DLT sin reproceso automático; ack de produce cubierto |
 | [0015](./adr/ADR-0015-arranque-ordenado-gateway-auth.md) | Orden Compose ≠ orden real en k8s (probes) |
