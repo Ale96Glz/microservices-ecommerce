@@ -34,8 +34,9 @@ ejecución**:
   `pagos_db`, `notificaciones_db`), sobrescribiendo la URL de datasource mediante
   variables de entorno `SPRING_DATASOURCE_*`.
 
-El esquema se genera con `spring.jpa.hibernate.ddl-auto: update` (Hibernate).
-**No se usa Flyway/Liquibase** (solo existe una carpeta `db/migration` vacía).
+El esquema se genera con `spring.jpa.hibernate.ddl-auto: update` (Hibernate)
+salvo en **pagos-service**, que usa Flyway (ADR-0017). El resto de servicios
+se migrará igual, de uno en uno.
 
 Entidades por dominio:
 
@@ -61,9 +62,8 @@ Entidades por dominio:
 
 ### Negativas / Compromisos
 
-- **Sin migraciones versionadas**: `ddl-auto: update` no deja historial de
-  esquema ni rollback; migraciones destructivas o de producción son arriesgadas
-  (deuda técnica a resolver con Flyway/Liquibase, `Fase 4`).
+- **Sin migraciones versionadas (parcial, ADR-0017)**: `ddl-auto: update` sigue
+  en auth/catálogo/pedidos/notificaciones. **pagos-service** ya usa Flyway.
 - **H2 vs PostgreSQL**: aunque el modo `MODE=PostgreSQL` mitiga diferencias,
   persisten divergencias (funciones, tipos, índices) no cubiertas.
 - **Un solo servidor Postgres** compartido entre 5 bases (docker-compose) es un

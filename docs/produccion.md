@@ -202,16 +202,13 @@ no las aplica (ADR-0007). ClusterIP no sustituye un default-deny.
 
 ### 10. Migraciones de schema
 
-**Hoy:** `spring.jpa.hibernate.ddl-auto: update` en todos los servicios. Un
-`JdbcTemplate` ad-hoc en pagos elimina el unique antiguo de `pago` (ADR-0004,
-ADR-0016). No hay Flyway/Liquibase.
+**Hoy (pagos):** Flyway (`db/migration`) + `ddl-auto: validate` (ADR-0017).
+El resto de servicios sigue en `update` hasta su PR.
 
-**Cambio:**
+**Cambio (resto de servicios):**
 
-- Flyway (o Liquibase) **por servicio**, `classpath:db/migration`.
-- Baseline del schema actual.
-- Producción: `ddl-auto: validate` o `none`.
-- El arreglo de unicidad de `pago` pasa a una migración versionada.
+- Flyway **por servicio**, `classpath:db/migration`.
+- Baseline del schema actual; `prod` con `validate`.
 
 **Archivos:** `application.yml` de cada servicio, `db/migration`, eliminar o
 acotar `PagoLegacyUniqueConstraintMigration`.
@@ -286,7 +283,8 @@ decisión, no como olvido:
 | ADR | Deuda viva para prod |
 |---|---|
 | [0002](./adr/ADR-0002-gateway-jwt-centralizado.md) | Un `JWT_SECRET` compromete todo; rotación no automatizada |
-| [0004](./adr/ADR-0004-persistencia-por-servicio.md) | Sin migraciones versionadas; un Postgres para todos |
+| [0004](./adr/ADR-0004-persistencia-por-servicio.md) | Un Postgres para todos; Flyway solo en pagos (ADR-0017) |
+| [0003](./adr/ADR-0003-kafka-asiincrono.md) / [0018](./adr/ADR-0018-topicos-kafka-declarados.md) | Auto-create aún true en lab; Job de tópicos cubre el contrato |
 | [0007](./adr/ADR-0007-exposicion-puertos-internos.md) | NetworkPolicies no efectivas en kindnet |
 | [0008](./adr/ADR-0008-https-ingress.md) | TLS self-signed; cert-manager pendiente |
 | [0009](./adr/ADR-0009-secretos-sealed.md) | Vault/ESO pendiente; Sealed Secrets acoplado a la clave del cluster |

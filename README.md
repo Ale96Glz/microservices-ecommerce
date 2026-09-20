@@ -172,6 +172,16 @@ En Linux o macOS:
 pwsh -File ./scripts/deploy-k8s.ps1
 ```
 
+El stack de aplicación (microservicios + Ingress) está en
+`scripts/deploy-k8s-full.ps1`. Por defecto usa el último tag git `v*` como
+versión de imagen en GHCR (`v1.1.1` → `:1.1.1`), sin dejar `:latest` en los
+manifiestos:
+
+```powershell
+.\scripts\deploy-k8s-full.ps1
+.\scripts\deploy-k8s-full.ps1 -ImageVersion 1.1.1
+```
+
 Actualmente ejecuta:
 
 1. Validación del contexto y los nodos.
