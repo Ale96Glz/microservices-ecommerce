@@ -255,8 +255,10 @@ try {
     foreach ($app in $appWorkloads) {
         $name = $app.Name
         $manifest = $app.Manifest
-        Invoke-Kubectl @("apply", "-f", (Join-Path $k8sPath "$manifest-deployment.yaml"))
-        Invoke-Kubectl @("apply", "-f", (Join-Path $k8sPath "$manifest-service.yaml"))
+        # --server-side --force-conflicts: un kubectl set env previo (value:)
+        # no puede mezclarse con valueFrom del manifiesto (env[i] inválido).
+        Invoke-Kubectl @("apply", "--server-side", "--force-conflicts", "-f", (Join-Path $k8sPath "$manifest-deployment.yaml"))
+        Invoke-Kubectl @("apply", "--server-side", "--force-conflicts", "-f", (Join-Path $k8sPath "$manifest-service.yaml"))
         $image = "${ImagePrefix}/${name}:${resolvedImageVersion}"
         Invoke-Kubectl @("set", "image", "deployment/$name", "${name}=${image}", "-n", $namespace)
         Write-Host "  $name -> $image" -ForegroundColor DarkGray
