@@ -18,6 +18,9 @@ resources:
   - catalogo-service.yaml
   - auth-deployment.yaml
   - auth-service.yaml
+  - auth-admin-init-job.yaml
+  - postgres-backup-pvc.yaml
+  - postgres-backup-cronjob.yaml
   - pedidos-deployment.yaml
   - pedidos-service.yaml
   - pagos-deployment.yaml
