@@ -1,4 +1,4 @@
-# ADR-0017: Migraciones versionadas con Flyway (primero pagos-service)
+# ADR-0017: Migraciones versionadas con Flyway
 
 - **Estatus:** Aceptado
 - **Fecha:** 2026-09
@@ -33,7 +33,8 @@ migración oculta, no versionada y solo PostgreSQL.
 1. **Flyway es la fuente de verdad del schema.** Hibernate deja de crear
    columnas en caliente.
 2. **Piloto: `pagos-service`** (el que ya rompió en 1.1.1). El resto de
-   servicios se migran igual, un módulo por PR, sin un big-bang.
+   servicios se migró con el mismo patrón (auth, catálogo, pedidos,
+   notificaciones): `V1__baseline_*.sql` + `ddl-auto: validate`.
 3. **Convención de scripts:**
    - `V1__baseline_*.sql`: CREATE TABLE IF NOT EXISTS del modelo actual
      (instalación vacía: H2 de tests, Postgres nuevo).
@@ -61,6 +62,6 @@ cambia *cómo* evoluciona el esquema). **No** sustituye backups (fase 3.11).
 
 - Hay que escribir SQL a la par que las entidades; un olvido lo caza `validate`.
 - Brownfield: `baseline-on-migrate` exige que V1 sea el estado *antes* de los
-  ALTER de V2, o que V2 sea idempotente (elegido).
-- Los otros cuatro servicios siguen en `ddl-auto: update` hasta su PR.
+  ALTER de V2, o que V2 sea idempotente (elegido). En PVC ya poblado sin
+  historial Flyway, V1 no se re-ejecuta: solo corre V2+.
 - H2 `MODE=PostgreSQL` no cubre todo el SQL de Postgres (ADR-0004).

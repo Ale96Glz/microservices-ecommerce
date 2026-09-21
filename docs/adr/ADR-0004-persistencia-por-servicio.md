@@ -34,18 +34,17 @@ ejecución**:
   `pagos_db`, `notificaciones_db`), sobrescribiendo la URL de datasource mediante
   variables de entorno `SPRING_DATASOURCE_*`.
 
-El esquema se genera con `spring.jpa.hibernate.ddl-auto: update` (Hibernate)
-salvo en **pagos-service**, que usa Flyway (ADR-0017). El resto de servicios
-se migrará igual, de uno en uno.
+El esquema lo versiona **Flyway** (ADR-0017) en los cinco servicios.
+Hibernate usa `ddl-auto: validate` (no crea columnas en caliente).
 
 Entidades por dominio:
 
 | Servicio | Base | Entidades |
 |---|---|---|
 | `auth-service` | `auth_db` | `usuario` |
-| `catalogo-service` | `catalogo_db` | `categoria`, `producto` |
-| `pedidos-service` | `pedidos_db` | `pedido`, `pedido_item` |
-| `pagos-service` | `pagos_db` | `pago` (UNIQUE `pedido_id`) |
+| `catalogo-service` | `catalogo_db` | `categoria`, `producto`, `restock_event` |
+| `pedidos-service` | `pedidos_db` | `pedido`, `pedido_item`, `outbox_event` |
+| `pagos-service` | `pagos_db` | `pago`, `outbox_event`, `configuracion` |
 | `notificaciones-service` | `notificaciones_db` | `notificacion` |
 
 ## Consecuencias
@@ -62,8 +61,8 @@ Entidades por dominio:
 
 ### Negativas / Compromisos
 
-- **Sin migraciones versionadas (parcial, ADR-0017)**: `ddl-auto: update` sigue
-  en auth/catálogo/pedidos/notificaciones. **pagos-service** ya usa Flyway.
+- **Schema versionado (ADR-0017)**: Flyway por servicio; Hibernate solo
+  valida. Un olvido de script lo caza el arranque (`validate`).
 - **H2 vs PostgreSQL**: aunque el modo `MODE=PostgreSQL` mitiga diferencias,
   persisten divergencias (funciones, tipos, índices) no cubiertas.
 - **Un solo servidor Postgres** compartido entre 5 bases (docker-compose) es un

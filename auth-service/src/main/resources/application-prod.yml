@@ -12,7 +12,12 @@ spring:
     console:
       enabled: false
   jpa:
+    hibernate:
+      ddl-auto: validate
     show-sql: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
 
 # El AdminBootstrap de laboratorio no carga con este profile.
 auth:

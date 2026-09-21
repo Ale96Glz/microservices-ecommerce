@@ -15,9 +15,12 @@ spring:
       path: /h2-console
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: ${JPA_DDL_AUTO:validate}
     show-sql: true
     open-in-view: false
+  flyway:
+    enabled: ${FLYWAY_ENABLED:true}
+    baseline-on-migrate: true
 
 jwt:
   secret: ${JWT_SECRET:change-me-to-a-long-random-secret-key-at-least-32-chars}

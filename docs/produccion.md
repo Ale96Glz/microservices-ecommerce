@@ -188,16 +188,12 @@ no las aplica (ADR-0007). ClusterIP no sustituye un default-deny.
 
 ### 10. Migraciones de schema
 
-**Hoy (pagos):** Flyway (`db/migration`) + `ddl-auto: validate` (ADR-0017).
-El resto de servicios sigue en `update` hasta su PR.
+**Hoy / estado:** Flyway + `ddl-auto: validate` en los cinco servicios
+(ADR-0017). `baseline-on-migrate` cubre PVC brownfield. Compose/H2 de tests
+siguen el mismo V1.
 
-**Cambio (resto de servicios):**
-
-- Flyway **por servicio**, `classpath:db/migration`.
-- Baseline del schema actual; `prod` con `validate`.
-
-**Archivos:** `application.yml` de cada servicio, `db/migration`, eliminar o
-acotar `PagoLegacyUniqueConstraintMigration`.
+**Pendiente:** no reintroducir `ddl-auto: update`; cada cambio de entidad lleva
+script `V{n}__…`. Backups aparte (punto 11).
 
 ### 11. Copias de seguridad
 
@@ -269,7 +265,7 @@ decisión, no como olvido:
 | ADR | Deuda viva para prod |
 |---|---|
 | [0002](./adr/ADR-0002-gateway-jwt-centralizado.md) | Un `JWT_SECRET` compromete todo; rotación no automatizada |
-| [0004](./adr/ADR-0004-persistencia-por-servicio.md) | Un Postgres para todos; Flyway solo en pagos (ADR-0017) |
+| [0004](./adr/ADR-0004-persistencia-por-servicio.md) | Un Postgres para todos; Flyway cubre las cinco bases (ADR-0017) |
 | [0003](./adr/ADR-0003-kafka-asiincrono.md) / [0018](./adr/ADR-0018-topicos-kafka-declarados.md) | Auto-create aún true en lab; Job de tópicos cubre el contrato |
 | [0007](./adr/ADR-0007-exposicion-puertos-internos.md) | NetworkPolicies no efectivas en kindnet |
 | [0008](./adr/ADR-0008-https-ingress.md) | TLS self-signed; cert-manager pendiente |
