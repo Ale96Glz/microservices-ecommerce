@@ -35,7 +35,7 @@
         <jjwt.version>0.12.6</jjwt.version>
         <springdoc.version>2.6.0</springdoc.version>
         <mockito.version>5.17.0</mockito.version>
-        <byte-buddy.version>1.17.1</byte-buddy.version>
+        <byte-buddy.version>1.18.14</byte-buddy.version>
         <netty.version>4.1.137.Final</netty.version>
         <bouncycastle.version>1.86</bouncycastle.version>
     </properties>
