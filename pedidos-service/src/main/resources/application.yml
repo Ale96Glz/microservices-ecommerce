@@ -38,6 +38,11 @@ auth:
   service:
     url: ${AUTH_SERVICE_URL:http://localhost:8081}
 
+http:
+  client:
+    connect-timeout: ${HTTP_CONNECT_TIMEOUT:2s}
+    read-timeout: ${HTTP_READ_TIMEOUT:5s}
+
 pedidos:
   kafka:
     enabled: ${PEDIDOS_KAFKA_ENABLED:false}

@@ -27,7 +27,8 @@ $deployments = @(
     "pedidos-service",
     "pagos-service",
     "notificaciones-service",
-    "api-gateway"
+    "api-gateway",
+    "grafana"
 )
 
 function Invoke-Kubectl {
@@ -219,7 +220,7 @@ try {
         else {
             Write-Host "Grafana: faltan GRAFANA_ADMIN_USER / GRAFANA_ADMIN_PASSWORD en el Secret." -ForegroundColor Yellow
             if (-not (Confirm-Step "¿Añadir las credenciales de Grafana al Secret?")) {
-                Write-Host "Grafana seguirá con admin/admin de fábrica hasta que existan esas claves." -ForegroundColor Yellow
+                throw "No se puede desplegar Grafana sin GRAFANA_ADMIN_PASSWORD."
             }
             else {
                 $grafana = Read-GrafanaCredentials
@@ -360,6 +361,13 @@ try {
         Invoke-Kubectl @("set", "image", "deployment/$name", "${name}=${image}", "-n", $namespace)
         Write-Host "  $name -> $image" -ForegroundColor DarkGray
     }
+
+    if (-not (Test-SecretHasKey "GRAFANA_ADMIN_PASSWORD")) {
+        throw "Falta GRAFANA_ADMIN_PASSWORD en ecommerce-secrets."
+    }
+    Invoke-Kubectl @("apply", "--server-side", "--force-conflicts", "-f", (Join-Path $k8sPath "grafana-provisioning-configmap.yaml"))
+    Invoke-Kubectl @("apply", "--server-side", "--force-conflicts", "-f", (Join-Path $k8sPath "grafana-deployment.yaml"))
+    Invoke-Kubectl @("apply", "--server-side", "--force-conflicts", "-f", (Join-Path $k8sPath "grafana-service.yaml"))
 
     Write-Step 10 "Esperando a que todos los deployments estén listos"
     foreach ($dep in $deployments) {

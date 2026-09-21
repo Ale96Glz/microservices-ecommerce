@@ -38,6 +38,11 @@ pedidos:
   service:
     url: ${PEDIDOS_SERVICE_URL:http://localhost:8083}
 
+http:
+  client:
+    connect-timeout: ${HTTP_CONNECT_TIMEOUT:2s}
+    read-timeout: ${HTTP_READ_TIMEOUT:5s}
+
 kafka:
   retry:
     max-attempts: 3

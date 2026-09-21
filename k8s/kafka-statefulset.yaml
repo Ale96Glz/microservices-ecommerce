@@ -47,7 +47,7 @@ spec:
             - name: KAFKA_CFG_INTER_BROKER_LISTENER_NAME
               value: PLAINTEXT
             - name: KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE
-              value: "true"
+              value: "false"
           readinessProbe:
             exec:
               command:

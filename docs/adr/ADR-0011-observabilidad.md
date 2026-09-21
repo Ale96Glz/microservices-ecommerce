@@ -73,7 +73,7 @@ La Agenda Fase 3 exige incorporar los tres. Se necesita:
    - `management.endpoints.web.exposure.include: health,info,prometheus` →
      endpoint Prometheus.
    - `management.tracing.sampling.probability: ${TRACING_SAMPLING_PROBABILITY:1.0}`
-     y `management.zipkin.tracing.endpoint: ${ZIPKIN_ENDPOINT:...}`.
+     (Compose/lab 1.0; ConfigMap k8s `0.1`) y `management.zipkin.tracing.endpoint`.
    - El `api-gateway` también lo agrega: los filtros (JWT, rate limit) generan
      spans; los gateways son el punto de entrada de la traza.
 3. **Infraestructura de observabilidad** (docker-compose y k8s):

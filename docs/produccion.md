@@ -97,9 +97,8 @@ solo como lab).
 ### 3. Grafana
 
 **Hoy:** anónimo desactivado en k8s y Compose. ClusterIP (no Ingress).
-Credenciales `GRAFANA_ADMIN_USER` / `GRAFANA_ADMIN_PASSWORD` en el Secret
-(`optional: true`; si faltan, Grafana usa `admin`/`admin`). Hay que sellar
-las claves nuevas.
+Credenciales `GRAFANA_ADMIN_USER` / `GRAFANA_ADMIN_PASSWORD` **obligatorias**
+en el Secret (sin `optional: true`). `deploy-k8s-full.ps1` aplica Grafana.
 
 **Hecho:**
 
@@ -143,17 +142,11 @@ Tras añadir `REDIS_PASSWORD` al Secret vivo, volver a sellar
 
 ### 7. Kafka
 
-**Hoy:** broker PLAINTEXT, `KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: true`.
+**Hoy / estado:** Kafka es ClusterIP. El Job declara los tópicos de contrato
+(ADR-0018). En Kubernetes `KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=false`. Compose
+de lab sigue con auto-create `true`. Broker aún PLAINTEXT.
 
-**Cambio:**
-
-- Solo ClusterIP (sin NodePort/host en prod).
-- SASL/SCRAM o mTLS.
-- `auto-create` en `false`; tópicos declarados (`order-created`,
-  `payment-processed`, `restock-requested`, DLT, etc.).
-
-**Archivos:** `docker-compose.yml`, `k8s/kafka-statefulset.yaml`, configs
-Spring Kafka de pedidos/pagos/notificaciones/catálogo.
+**Pendiente:** SASL/SCRAM o mTLS.
 
 ### 8. TLS del Ingress
 
@@ -234,10 +227,10 @@ Sí bloquean un SLA serio.
 
 | Mejora | Por qué |
 |---|---|
-| Timeouts explícitos en `RestClient` (catálogo, auth, pedidos) | Hoy un servicio colgado puede agotar hilos |
+| Timeouts explícitos en `RestClient` (catálogo, auth, pedidos) | Hecho: 2s connect / 5s read (`HTTP_CONNECT_TIMEOUT`, `HTTP_READ_TIMEOUT`) |
 | Circuit breaker (Resilience4j) en clientes HTTP | Aislar fallos de catálogo/pedidos |
 | Rate limit por `sub` JWT además de IP | NAT comparte IP; el burst de login es pequeño |
-| Sampling Zipkin `0.05`–`0.1`; store persistente (o Tempo) | Sampling `1.0` satura; Zipkin en memoria se pierde (ADR-0011) |
+| Sampling Zipkin `0.05`–`0.1`; store persistente (o Tempo) | Sampling k8s `0.1`; Zipkin en memoria se pierde (ADR-0011) |
 | Alertmanager (error rate, lag Kafka, disco PVC) | Prometheus sin alertas no opera |
 | Réplicas de gateway/auth/catálogo | Todo k8s está en `replicas: 1` |
 | HA de Postgres / Kafka | SPOF de datos; no hace falta el día 1 si hay backup |
@@ -266,11 +259,11 @@ decisión, no como olvido:
 |---|---|
 | [0002](./adr/ADR-0002-gateway-jwt-centralizado.md) | Un `JWT_SECRET` compromete todo; rotación no automatizada |
 | [0004](./adr/ADR-0004-persistencia-por-servicio.md) | Un Postgres para todos; Flyway cubre las cinco bases (ADR-0017) |
-| [0003](./adr/ADR-0003-kafka-asiincrono.md) / [0018](./adr/ADR-0018-topicos-kafka-declarados.md) | Auto-create aún true en lab; Job de tópicos cubre el contrato |
+| [0003](./adr/ADR-0003-kafka-asiincrono.md) / [0018](./adr/ADR-0018-topicos-kafka-declarados.md) | Auto-create false en k8s; Job de tópicos; SASL pendiente |
 | [0007](./adr/ADR-0007-exposicion-puertos-internos.md) | NetworkPolicies no efectivas en kindnet |
 | [0008](./adr/ADR-0008-https-ingress.md) | TLS self-signed; cert-manager pendiente |
 | [0009](./adr/ADR-0009-secretos-sealed.md) | Vault/ESO pendiente; Sealed Secrets acoplado a la clave del cluster |
 | [0010](./adr/ADR-0010-rate-limiting-redis.md) | Rate limit por IP; RedisRateLimiter nativo sigue fail-open (mitigado en prod) |
-| [0011](./adr/ADR-0011-observabilidad.md) | Sampling 1.0; Zipkin sin persistencia; sin trace en Kafka |
+| [0011](./adr/ADR-0011-observabilidad.md) | Sampling k8s 0.1; Zipkin sin persistencia; sin trace en Kafka |
 | [0013](./adr/ADR-0013-compensacion-stock-saga-outbox.md) / [0019](./adr/ADR-0019-outbox-ack-kafka.md) | Compensación eventual; DLT sin reproceso automático; ack de produce cubierto |
 | [0015](./adr/ADR-0015-arranque-ordenado-gateway-auth.md) | Orden Compose ≠ orden real en k8s (probes) |
