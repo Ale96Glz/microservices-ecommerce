@@ -79,20 +79,13 @@ k8s). Compose y tests locales siguen en profile por defecto (lab).
 
 ### 2. Usuario ADMIN de demo
 
-**Hoy:** en profile `prod` el bootstrap no corre (`@Profile("!prod")`). En
-laboratorio sí; la password ya no se loguea. Un ADMIN ya persistido en
-`auth_db` no se borra al redesplegar (hay que rotarlo a mano). El Job
-one-shot de primer ADMIN sigue pendiente.
+**Hoy / estado:** el bootstrap de laboratorio (`Admin1234`) no corre en `prod`.
+El Job `auth-admin-init` crea el primer ADMIN con `AUTH_ADMIN_EMAIL` /
+`AUTH_ADMIN_PASSWORD` del Secret (no pisa un usuario que ya exista). Un ADMIN
+viejo de demo hay que rotarlo a mano.
 
-**Hecho:**
-
-- `@Profile("!prod")` o `AUTH_BOOTSTRAP_ADMIN=false` en producción.
-- El primer ADMIN sale de un Job/script one-shot que lee el password del
-  Secret, no de código compilado.
-- No loguear contraseñas en claro.
-
-**Archivos:** `auth-service/.../AdminBootstrap.java`, README (credenciales
-solo como lab).
+**Archivos:** `auth-service/.../AdminInitRunner.java`,
+`k8s/auth-admin-init-job.yaml`, `scripts/deploy-k8s-full.ps1`, Secret.
 
 ### 3. Grafana
 
@@ -190,33 +183,18 @@ script `V{n}__…`. Backups aparte (punto 11).
 
 ### 11. Copias de seguridad
 
-**Hoy:** un Postgres, cinco bases (`auth_db`, `catalogo_db`, `pedidos_db`,
-`pagos_db`, `notificaciones_db`), PVC, sin CronJob ni restore documentado.
-Un solo Postgres es SPOF (ADR-0004).
-
-**Cambio:**
-
-- CronJob `pg_dump` de las cinco bases hacia object storage (S3, MinIO, etc.).
-- Retención explícita.
-- Drill de restore (al menos trimestral) documentado aquí o en runbooks.
-
-**Archivos:** nuevo manifiesto CronJob + runbook de restore. `infra/init-dbs.sql`
-sigue siendo el mapa de bases.
+**Hoy / estado:** CronJob `postgres-backup` (03:00 UTC) hace `pg_dump` custom
+de las cinco bases a un PVC (`postgres-backup-pvc`), retención 14 días.
+Restore: `pg_restore` desde un dump del PVC (ensayar a mano). Sigue habiendo
+un solo Postgres (SPOF). Object storage (S3) queda pendiente.
 
 ### 12. Imágenes y cadena de suministro
 
-**Hoy:** `${IMAGE_VERSION:-latest}` / `${IMAGE_TAG:-latest}`. El workflow de
-release también tagea `latest`. No hay Trivy/Grype ni CodeQL/Dependabot.
+**Hoy / estado:** el deploy usa tag git (`vX.Y.Z`). El workflow de release
+sigue publicando también `latest`. Trivy (CRITICAL, unfixed ignorados) corre
+tras el push. Dependabot semanal (Maven y Actions).
 
-**Cambio:**
-
-- Desplegar solo tag inmutable (`vX.Y.Z` o SHA de git), nunca `latest` en prod.
-- En `.github/workflows/release-images.yml`: escaneo (Trivy o equivalente) y
-  fallar el job ante vulnerabilidades CRITICAL.
-- Dependabot o renovate para Maven y acciones de GitHub.
-
-**Archivos:** `k8s/*-deployment.yaml`, `docker-compose.yml`,
-`.github/workflows/release-images.yml`.
+**Pendiente:** no publicar `latest`; drill de restore; object storage.
 
 ---
 

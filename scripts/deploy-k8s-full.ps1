@@ -101,6 +101,18 @@ function Read-GrafanaCredentials {
     return @{ User = $grafanaUser; Password = $grafanaPassword }
 }
 
+function Read-AdminCredentials {
+    $adminEmail = Read-Host "Email del primer ADMIN [admin@ecommerce.local]"
+    if ([string]::IsNullOrWhiteSpace($adminEmail)) {
+        $adminEmail = "admin@ecommerce.local"
+    }
+    $adminPassword = Read-RequiredSecret "Password del primer ADMIN (no se mostrará)"
+    if ($adminPassword -eq "Admin1234") {
+        throw "El password del ADMIN no puede ser Admin1234."
+    }
+    return @{ Email = $adminEmail; Password = $adminPassword }
+}
+
 function Merge-SecretStringData {
     param(
         [Parameter(Mandatory = $true)][hashtable]$Pairs
@@ -236,6 +248,22 @@ try {
             }
         }
 
+        if (Test-SecretHasKey "AUTH_ADMIN_PASSWORD") {
+            Write-Host "ADMIN inicial: el Secret ya tiene AUTH_ADMIN_PASSWORD; no se pide de nuevo." -ForegroundColor DarkGray
+        }
+        else {
+            Write-Host "ADMIN inicial: faltan AUTH_ADMIN_EMAIL / AUTH_ADMIN_PASSWORD en el Secret." -ForegroundColor Yellow
+            if (-not (Confirm-Step "¿Añadir las credenciales del primer ADMIN al Secret?")) {
+                throw "No se puede ejecutar auth-admin-init sin AUTH_ADMIN_PASSWORD."
+            }
+            $admin = Read-AdminCredentials
+            Merge-SecretStringData @{
+                AUTH_ADMIN_EMAIL    = $admin.Email
+                AUTH_ADMIN_PASSWORD = $admin.Password
+            }
+            Write-Host "Claves de ADMIN inicial añadidas a ecommerce-secrets." -ForegroundColor Green
+        }
+
         if (Test-SecretHasKey "REDIS_PASSWORD") {
             Write-Host "Redis: el Secret ya tiene REDIS_PASSWORD; no se pide de nuevo." -ForegroundColor DarkGray
         }
@@ -267,6 +295,7 @@ try {
         $jwtSecret = Read-RequiredSecret "JWT secret de mínimo 32 caracteres (no se mostrará)"
         $grafana = Read-GrafanaCredentials
         $redisPassword = Read-RequiredSecret "Password de Redis (no se mostrará)"
+        $admin = Read-AdminCredentials
 
         if ($jwtSecret.Length -lt 32) {
             throw "El JWT secret debe tener al menos 32 caracteres."
@@ -284,6 +313,8 @@ try {
             --from-literal=GRAFANA_ADMIN_USER=$($grafana.User) `
             --from-literal=GRAFANA_ADMIN_PASSWORD=$($grafana.Password) `
             --from-literal=REDIS_PASSWORD=$redisPassword `
+            --from-literal=AUTH_ADMIN_EMAIL=$($admin.Email) `
+            --from-literal=AUTH_ADMIN_PASSWORD=$($admin.Password) `
             --dry-run=client -o yaml | kubectl apply -f -
 
         if ($LASTEXITCODE -ne 0) {
@@ -301,6 +332,8 @@ try {
     Invoke-Kubectl @("apply", "-f", (Join-Path $k8sPath "postgres-pvc.yaml"))
     Invoke-Kubectl @("apply", "-f", (Join-Path $k8sPath "postgres-service.yaml"))
     Invoke-Kubectl @("apply", "-f", (Join-Path $k8sPath "postgres-statefulset.yaml"))
+    Invoke-Kubectl @("apply", "-f", (Join-Path $k8sPath "postgres-backup-pvc.yaml"))
+    Invoke-Kubectl @("apply", "-f", (Join-Path $k8sPath "postgres-backup-cronjob.yaml"))
 
     Write-Step 6 "Esperando a que PostgreSQL esté listo"
     Invoke-Kubectl @("rollout", "status", "statefulset/postgres", "-n", $namespace, "--timeout=180s")
@@ -374,6 +407,24 @@ try {
         Invoke-Kubectl @("rollout", "status", "deployment/$dep", "-n", $namespace, "--timeout=300s")
     }
 
+    if (-not (Test-SecretHasKey "AUTH_ADMIN_PASSWORD")) {
+        throw "Falta AUTH_ADMIN_PASSWORD en ecommerce-secrets."
+    }
+    Write-Host "Job primer ADMIN (no pisa un usuario que ya exista)..." -ForegroundColor Cyan
+    kubectl delete job auth-admin-init -n $namespace --ignore-not-found | Out-Null
+    $jobSrc = Join-Path $k8sPath "auth-admin-init-job.yaml"
+    $jobRaw = [IO.File]::ReadAllText($jobSrc)
+    $jobRaw = [regex]::Replace($jobRaw, "auth-service:\S+", "auth-service:$resolvedImageVersion")
+    $jobTmp = Join-Path ([IO.Path]::GetTempPath()) ("auth-admin-init-{0}.yaml" -f [guid]::NewGuid().ToString("n"))
+    try {
+        [IO.File]::WriteAllText($jobTmp, $jobRaw, [Text.UTF8Encoding]::new($false))
+        Invoke-Kubectl @("apply", "-f", $jobTmp)
+        Invoke-Kubectl @("wait", "--for=condition=complete", "job/auth-admin-init", "-n", $namespace, "--timeout=180s")
+    }
+    finally {
+        Remove-Item -LiteralPath $jobTmp -Force -ErrorAction SilentlyContinue
+    }
+
     Write-Step 11 "Desplegando Ingress"
     $ingressClassExists = $true
     & kubectl get ingressclass nginx 2>$null | Out-Null
@@ -402,5 +453,6 @@ finally {
     $jwtSecret = $null
     $grafana = $null
     $redisPassword = $null
+    $admin = $null
     [GC]::Collect()
 }

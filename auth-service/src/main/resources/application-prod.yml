@@ -20,8 +20,9 @@ spring:
     baseline-on-migrate: true
 
 # El AdminBootstrap de laboratorio no carga con este profile.
+# El Job auth-admin-init pone AUTH_BOOTSTRAP_ADMIN=true y AUTH_ADMIN_PASSWORD.
 auth:
-  bootstrap-admin: false
+  bootstrap-admin: ${AUTH_BOOTSTRAP_ADMIN:false}
 
 springdoc:
   api-docs:

@@ -22,6 +22,13 @@ spring:
     enabled: ${FLYWAY_ENABLED:true}
     baseline-on-migrate: true
 
+auth:
+  bootstrap-admin: ${AUTH_BOOTSTRAP_ADMIN:true}
+  bootstrap-admin-exit: ${AUTH_BOOTSTRAP_ADMIN_EXIT:false}
+  admin:
+    email: ${AUTH_ADMIN_EMAIL:admin@ecommerce.local}
+    password: ${AUTH_ADMIN_PASSWORD:}
+
 jwt:
   secret: ${JWT_SECRET:change-me-to-a-long-random-secret-key-at-least-32-chars}
   expiration-ms: ${JWT_EXPIRATION_MS:3600000}
