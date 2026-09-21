@@ -37,7 +37,7 @@
         <mockito.version>5.17.0</mockito.version>
         <byte-buddy.version>1.17.1</byte-buddy.version>
         <netty.version>4.1.137.Final</netty.version>
-        <bouncycastle.version>1.85</bouncycastle.version>
+        <bouncycastle.version>1.86</bouncycastle.version>
     </properties>
 
     <dependencyManagement>
