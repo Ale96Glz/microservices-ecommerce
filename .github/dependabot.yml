@@ -6,12 +6,14 @@ updates:
       interval: weekly
     open-pull-requests-limit: 5
     ignore:
+      # Boot 3.3.x: 3.4/3.5 son "minor" semver y rompen Cloud/SpringDoc.
+      - dependency-name: "org.springframework.boot:spring-boot-starter-parent"
+        versions: [">=3.4.0"]
       - dependency-name: "org.springframework.cloud:spring-cloud-dependencies"
         update-types: ["version-update:semver-major"]
-      - dependency-name: "org.springframework.boot:spring-boot-starter-parent"
-        update-types: ["version-update:semver-major"]
+      # SpringDoc 2.7+ pide Boot 3.4+.
       - dependency-name: "org.springdoc:springdoc-openapi-starter-webmvc-ui"
-        update-types: ["version-update:semver-major"]
+        versions: [">=2.7.0"]
       - dependency-name: "io.jsonwebtoken:*"
         update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
@@ -19,3 +21,6 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
