@@ -30,13 +30,11 @@ spec:
                 secretKeyRef:
                   name: ecommerce-secrets
                   key: GRAFANA_ADMIN_USER
-                  optional: true
             - name: GF_SECURITY_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: ecommerce-secrets
                   key: GRAFANA_ADMIN_PASSWORD
-                  optional: true
             - name: GF_AUTH_ANONYMOUS_ENABLED
               value: "false"
           volumeMounts:

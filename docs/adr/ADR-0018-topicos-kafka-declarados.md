@@ -45,9 +45,9 @@ El auto-create tampoco garantiza particiones, factor de replicación ni DLT.
 2. **Bootstrap:** `infra/kafka-create-topics.sh` (idempotente `--if-not-exists`),
    invocado por Compose y por el Job `k8s/kafka-topics-job.yaml`.
    `deploy-k8s-full.ps1` espera el Job `Complete` antes de los microservicios.
-3. **Auto-create** permanece `true` en lab como red de seguridad para tópicos
-   no listados. En un endurecimiento posterior de prod se pone `false` cuando
-   la lista esté completa y el Job sea gate de deploy.
+3. **Auto-create** es `false` en Kubernetes (el Job de tópicos es el gate).
+   En Compose de lab permanece `true` como red de seguridad para tópicos no
+   listados.
 4. **Ack de produce:** el outbox solo pasa a `PUBLICADO` cuando
    `KafkaTemplate.send(...).get(...)` confirma (ADR-0019). Un `UNKNOWN_TOPIC`
    deja la fila `PENDIENTE` y se reintenta. **Replay** de un outbox ya
@@ -66,5 +66,6 @@ El auto-create tampoco garantiza particiones, factor de replicación ni DLT.
 
 - Un tópico nuevo exige cambiar el script **y** el código (`KafkaTopics`).
 - RF=1 no es HA (mismo SPOF del ADR-0003).
-- Auto-create `true` en lab puede ocultar un olvido en el script hasta prod.
+- Auto-create `true` en Compose puede ocultar un olvido en el script hasta
+  Kubernetes (`false` + Job).
 - El Job de k8s hay que borrarlo/recrearlo para reejecutarlo (Jobs inmutables).
