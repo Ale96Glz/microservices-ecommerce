@@ -196,6 +196,11 @@ wait_until "al menos una notificacion para el usuario" 90 notificacion_creada
 
 # --- 7. Saga de compensacion: pago automatico RECHAZADO -> CANCELADO -> restock
 echo "[7/9] Verificar compensacion de stock por rechazo de pago..."
+# Un smoke previo deja el umbral en 10000 (paso 8); sin resetear, 120.00 sale PROCESADO.
+docker compose exec -T postgres psql -U ecommerce -d pagos_db -v ON_ERROR_STOP=1 \
+  -c "INSERT INTO configuracion (clave,valor) VALUES ('monto_maximo_aprobado','100') \
+      ON CONFLICT (clave) DO UPDATE SET valor='100';" >/dev/null \
+  || fail "no se pudo resetear el umbral de aprobacion en pagos_db"
 STOCK_TRAS_CANCELACION=$((STOCK_INICIAL - CANTIDAD - CANTIDAD_RECHAZO))
 
 crear_pedido_rechazado() {
