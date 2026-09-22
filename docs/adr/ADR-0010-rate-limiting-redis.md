@@ -60,9 +60,11 @@ La Agenda Fase 3 exige agregar rate limiting. Se necesita una solución que:
      - Valores parametrizados por env:
        `GATEWAY_RATE_LIMIT_PERMITS_PER_SECOND`,
        `GATEWAY_RATE_LIMIT_BURST_CAPACITY`, `...LOGIN_*` para la variante login.
-   - **KeyResolver**: por **IP del cliente** (X-Forwarded-For del gateway,
-     configurado para confiar en el Ingress). La identificación por JWT/usuario
-     queda como mejora futura documentada.
+   - **KeyResolver**:
+     - Login/register: **IP** (`X-Forwarded-For` o IP remota) para fuerza bruta.
+     - Resto de rutas: **`sub` del JWT** (`jwt:<userId>`) si el Bearer es
+       válido; si no hay token o es inválido, **IP** (`ip:<cliente>`). Dos
+       usuarios detrás del mismo NAT no comparten bucket autenticado.
    - El Redis **no guarda datos de negocio**: solo el estado del token bucket.
      Si cae, se evalúa degradación (ver Consecuencias).
 
@@ -96,7 +98,7 @@ La Agenda Fase 3 exige agregar rate limiting. Se necesita una solución que:
   laboratorio eso se mantiene. En profile **`prod`**, `RedisFailClosedFilter`
   sondea Redis y responde **503** al API si no hay conexión (fail-closed);
   `/actuator` queda fuera para probes.
-- **Identificación imperfecta**: el KeyResolver por IP agrupa a todos los
-  usuarios del mismo NAT/proxy; la granularidad por JWT/usuario queda pendiente.
+- **Identificación**: login/register por IP; el resto por `sub` JWT con
+  fallback a IP (catálogo público sin token, token inválido).
 - **Redis en lab puede ir sin password**; en Kubernetes el password es
   obligatorio (`REDIS_PASSWORD` + `ProductionSecrets` en el gateway).

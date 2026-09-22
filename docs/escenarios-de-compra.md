@@ -222,7 +222,7 @@ cancelación (follow-up abierto).
 | `POST /pago` para un pedido ya pagado/rechazado | `409` | unicidad `pedido_id`; **sin reintento aún** (ADR-0014, follow-up) |
 | Llamadas sin `Authorization` | `401` | JWT requerido (gateway) |
 | `POST /producto` con rol `USER` | `403` | operación de `ADMIN` |
-| Más de N peticiones por usuario/instante | `429` | rate limiting Redis (ADR-0010); reintenta |
+| Más de N peticiones por usuario (JWT `sub`) o por IP sin token | `429` | rate limiting Redis (ADR-0010); reintenta |
 | Id inexistente | `404` | `ResourceNotFoundException` |
 
 ---
