@@ -49,7 +49,7 @@ spring:
                 redis-rate-limiter.replenishRate: ${GATEWAY_RATE_LIMIT_REPLENISH:1}
                 redis-rate-limiter.burstCapacity: ${GATEWAY_RATE_LIMIT_CAPACITY:20}
                 redis-rate-limiter.requestedTokens: 1
-                key-resolver: "#{@remoteAddressKeyResolver}"
+                key-resolver: "#{@jwtOrIpKeyResolver}"
         - id: catalogo-service
           uri: ${CATALOGO_SERVICE_URL:http://localhost:8082}
           predicates:
@@ -60,7 +60,7 @@ spring:
                 redis-rate-limiter.replenishRate: ${GATEWAY_RATE_LIMIT_REPLENISH:1}
                 redis-rate-limiter.burstCapacity: ${GATEWAY_RATE_LIMIT_CAPACITY:20}
                 redis-rate-limiter.requestedTokens: 1
-                key-resolver: "#{@remoteAddressKeyResolver}"
+                key-resolver: "#{@jwtOrIpKeyResolver}"
         - id: pedidos-service
           uri: ${PEDIDOS_SERVICE_URL:http://localhost:8083}
           predicates:
@@ -71,7 +71,7 @@ spring:
                 redis-rate-limiter.replenishRate: ${GATEWAY_RATE_LIMIT_REPLENISH:1}
                 redis-rate-limiter.burstCapacity: ${GATEWAY_RATE_LIMIT_CAPACITY:20}
                 redis-rate-limiter.requestedTokens: 1
-                key-resolver: "#{@remoteAddressKeyResolver}"
+                key-resolver: "#{@jwtOrIpKeyResolver}"
         - id: pagos-service
           uri: ${PAGOS_SERVICE_URL:http://localhost:8084}
           predicates:
@@ -82,7 +82,7 @@ spring:
                 redis-rate-limiter.replenishRate: ${GATEWAY_RATE_LIMIT_REPLENISH:1}
                 redis-rate-limiter.burstCapacity: ${GATEWAY_RATE_LIMIT_CAPACITY:20}
                 redis-rate-limiter.requestedTokens: 1
-                key-resolver: "#{@remoteAddressKeyResolver}"
+                key-resolver: "#{@jwtOrIpKeyResolver}"
         - id: notificaciones-service
           uri: ${NOTIFICACIONES_SERVICE_URL:http://localhost:8085}
           predicates:
@@ -93,7 +93,7 @@ spring:
                 redis-rate-limiter.replenishRate: ${GATEWAY_RATE_LIMIT_REPLENISH:1}
                 redis-rate-limiter.burstCapacity: ${GATEWAY_RATE_LIMIT_CAPACITY:20}
                 redis-rate-limiter.requestedTokens: 1
-                key-resolver: "#{@remoteAddressKeyResolver}"
+                key-resolver: "#{@jwtOrIpKeyResolver}"
 
 jwt:
   secret: ${JWT_SECRET:change-me-to-a-long-random-secret-key-at-least-32-chars}

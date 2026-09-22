@@ -124,9 +124,10 @@ Compose (profile por defecto) sigue con `*` para lab.
 `prod`, `RedisFailClosedFilter` responde 503 si Redis no responde (el
 `RedisRateLimiter` 4.1 sigue siendo fail-open internamente). Compose de lab
 sigue opcionalmente sin password; el puerto se publica solo en `127.0.0.1`.
+Rutas autenticadas limitan por `sub` JWT; login/register y peticiones sin
+token válido siguen por IP.
 
-**Pendiente:** KeyResolver por `sub` del JWT además de IP (NAT comparte IP).
-Tras añadir `REDIS_PASSWORD` al Secret vivo, volver a sellar
+**Pendiente:** Tras añadir `REDIS_PASSWORD` al Secret vivo, volver a sellar
 (`scripts/seal-ecommerce-secrets.ps1`) para que el SealedSecret no pise la clave.
 
 **Archivos:** `docker-compose.yml`, `k8s/redis-deployment.yaml`,
@@ -208,7 +209,7 @@ Sí bloquean un SLA serio.
 |---|---|
 | Timeouts explícitos en `RestClient` (catálogo, auth, pedidos) | Hecho: 2s connect / 5s read (`HTTP_CONNECT_TIMEOUT`, `HTTP_READ_TIMEOUT`) |
 | Circuit breaker (Resilience4j) en clientes HTTP | Aislar fallos de catálogo/pedidos |
-| Rate limit por `sub` JWT además de IP | NAT comparte IP; el burst de login es pequeño |
+| Rate limit por `sub` JWT además de IP | Hecho: `JwtOrIpKeyResolver`; login sigue por IP |
 | Sampling Zipkin `0.05`–`0.1`; store persistente (o Tempo) | Sampling k8s `0.1`; Zipkin en memoria se pierde (ADR-0011) |
 | Alertmanager (error rate, lag Kafka, disco PVC) | Prometheus sin alertas no opera |
 | Réplicas de gateway/auth/catálogo | Todo k8s está en `replicas: 1` |
@@ -242,7 +243,7 @@ decisión, no como olvido:
 | [0007](./adr/ADR-0007-exposicion-puertos-internos.md) | NetworkPolicies no efectivas en kindnet |
 | [0008](./adr/ADR-0008-https-ingress.md) | TLS self-signed; cert-manager pendiente |
 | [0009](./adr/ADR-0009-secretos-sealed.md) | Vault/ESO pendiente; Sealed Secrets acoplado a la clave del cluster |
-| [0010](./adr/ADR-0010-rate-limiting-redis.md) | Rate limit por IP; RedisRateLimiter nativo sigue fail-open (mitigado en prod) |
+| [0010](./adr/ADR-0010-rate-limiting-redis.md) | JWT `sub` + IP; RedisRateLimiter nativo sigue fail-open (mitigado en prod) |
 | [0011](./adr/ADR-0011-observabilidad.md) | Sampling k8s 0.1; Zipkin sin persistencia; sin trace en Kafka |
 | [0013](./adr/ADR-0013-compensacion-stock-saga-outbox.md) / [0019](./adr/ADR-0019-outbox-ack-kafka.md) | Compensación eventual; DLT sin reproceso automático; ack de produce cubierto |
 | [0015](./adr/ADR-0015-arranque-ordenado-gateway-auth.md) | Orden Compose ≠ orden real en k8s (probes) |
