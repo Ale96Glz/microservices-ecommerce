@@ -73,7 +73,6 @@ jobs:
           images: ${{ needs.resolve-version.outputs.image_prefix }}/${{ matrix.service }}
           tags: |
             type=raw,value=${{ needs.resolve-version.outputs.version }}
-            type=raw,value=latest
 
       - name: Build and push
         uses: docker/build-push-action@v6

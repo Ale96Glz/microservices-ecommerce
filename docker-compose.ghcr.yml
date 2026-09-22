@@ -1,6 +1,6 @@
 # Override para usar imágenes de GHCR (sin rebuild local).
 # Uso:
-#   set IMAGE_TAG=v1.0.0
+#   set IMAGE_TAG=1.1.9
 #   docker compose -f docker-compose.yml -f docker-compose.ghcr.yml pull
 #   docker compose -f docker-compose.yml -f docker-compose.ghcr.yml up -d --no-build
 

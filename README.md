@@ -326,7 +326,7 @@ imágenes publicadas:
 docker compose pull postgres kafka zipkin redis \
   auth-service catalogo-service pedidos-service pagos-service \
   notificaciones-service api-gateway
-IMAGE_PREFIX=ghcr.io/ale96glz/microservices-ecommerce IMAGE_VERSION=latest \
+IMAGE_PREFIX=ghcr.io/ale96glz/microservices-ecommerce IMAGE_VERSION=1.1.9 \
   docker compose up -d --no-build postgres kafka zipkin redis \
   auth-service catalogo-service pedidos-service pagos-service \
   notificaciones-service api-gateway
