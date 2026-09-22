@@ -185,16 +185,18 @@ script `V{n}__…`. Backups aparte (punto 11).
 ### 11. Copias de seguridad
 
 **Hoy / estado:** CronJob `postgres-backup` (03:00 UTC) hace `pg_dump` custom
-de las cinco bases a un PVC (`postgres-backup-pvc`), retención 14 días.
-Restore: `pg_restore` desde un dump del PVC (ensayar a mano). Sigue habiendo
-un solo Postgres (SPOF). Object storage (S3) queda pendiente.
+de las cinco bases a un PVC (`postgres-backup-pvc`), retención 14 días. Un
+stamp incompleto (reintento) se descarta. Restore: Job temporal vía
+`scripts/restore-postgres-backup.ps1` (base `*_restore_drill`, no pisa las
+vivas). Sigue habiendo un solo Postgres (SPOF). Object storage (S3) queda
+pendiente.
 
 ### 12. Imágenes y cadena de suministro
 
 **Hoy / estado:** el deploy usa tag git (`vX.Y.Z`). El workflow de release
 publica solo ese tag (no `latest`). Trivy (CRITICAL, unfixed ignorados) corre
 tras el push. Dependabot semanal (Maven y Actions). Restore de `pg_dump`
-ensayado contra el PVC (`catalogo_restore_drill`).
+vía `scripts/restore-postgres-backup.ps1`.
 
 **Pendiente:** object storage (S3).
 
