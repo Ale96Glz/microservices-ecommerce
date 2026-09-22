@@ -4,9 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Tag de las imagenes en GHCR (ej. 1.0.6 o latest)"
-        required: false
-        default: "latest"
+        description: "Tag de las imagenes en GHCR (ej. 1.1.9, sin latest)"
+        required: true
         type: string
       registry:
         description: "Prefijo del registro de imagenes"
@@ -26,13 +25,17 @@ concurrency:
 
 env:
   IMAGE_PREFIX: ghcr.io/ale96glz/microservices-ecommerce
-  IMAGE_VERSION: latest
 
 jobs:
   smoke:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
+          fetch-tags: true
 
       - id: version
         run: |
@@ -40,8 +43,13 @@ jobs:
             VERSION="${{ inputs.version }}"
             REGISTRY="${{ inputs.registry }}"
           else
-            VERSION="latest"
             REGISTRY="${{ env.IMAGE_PREFIX }}"
+            TAG=$(git tag --points-at HEAD 'v*' | sort -V | tail -1)
+            if [ -z "$TAG" ]; then
+              echo "No hay tag v* en este commit. El smoke automatico solo corre tras un release por tag."
+              exit 1
+            fi
+            VERSION="${TAG#v}"
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "registry=$REGISTRY" >> "$GITHUB_OUTPUT"

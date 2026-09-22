@@ -191,10 +191,11 @@ un solo Postgres (SPOF). Object storage (S3) queda pendiente.
 ### 12. Imágenes y cadena de suministro
 
 **Hoy / estado:** el deploy usa tag git (`vX.Y.Z`). El workflow de release
-sigue publicando también `latest`. Trivy (CRITICAL, unfixed ignorados) corre
-tras el push. Dependabot semanal (Maven y Actions).
+publica solo ese tag (no `latest`). Trivy (CRITICAL, unfixed ignorados) corre
+tras el push. Dependabot semanal (Maven y Actions). Restore de `pg_dump`
+ensayado contra el PVC (`catalogo_restore_drill`).
 
-**Pendiente:** no publicar `latest`; drill de restore; object storage.
+**Pendiente:** object storage (S3).
 
 ---
 

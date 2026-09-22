@@ -56,11 +56,11 @@ imágenes publicadas en GHCR (siempre reconstruiría).
    junto a su `build:`. El desarrollo local sigue igual (`docker compose up
    --build`); CI/CD usa `docker compose pull` + `up --no-build` para consumir
    únicamente artefactos publicados (`IMAGE_VERSION` permite probar cualquier
-   tag, por defecto `latest`).
+   tag; el release a GHCR ya no publica `latest`).
 2. **Workflow `smoke.yml`** (`.github/workflows`):
-   - **Disparadores**: manual (`workflow_dispatch` con `version` y `registry` a
-     elección, por defecto `latest` + GHCR) y automático tras `release-images`
-     (`workflow_run.completed`), probando el `latest` recién publicado.
+   - **Disparadores**: manual (`workflow_dispatch` con `version` obligatoria y
+     `registry`) y automático tras `release-images` en verde
+     (`workflow_run.completed`), resolviendo el tag `v*` del commit publicado.
    - Levanta **solo los servicios necesarios** del compose (postgres, kafka,
      zipkin, redis, los 6 microservicios y api-gateway); se excluyen las
      herramientas de UI/ops (kafka-ui, prometheus, grafana) para reducir tiempo
@@ -89,9 +89,8 @@ imágenes publicadas en GHCR (siempre reconstruiría).
 4. **`ci.yml`**: además de `mvn verify`, sube los reportes surefire/failsafe
    como artefacto (`test-reports`) siempre que el job termine, para diagnóstico
    local de fallos.
-5. **Primera corrida**: el smoke manual con `latest` requiere al menos un
-   release previo; si el tag no existe, `docker compose pull` lo reporta y se
-   puede pasar `version` de un release conocido.
+5. **Primera corrida**: el smoke manual pide un tag concreto (p. ej. `1.1.9`);
+   si no existe en GHCR, `docker compose pull` lo reporta.
 
 ## Consecuencias
 
