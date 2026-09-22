@@ -2,6 +2,7 @@ package com.aosorio.ecommerce.gateway.config;
 
 import com.aosorio.ecommerce.gateway.security.JwtValidator;
 import org.springframework.cloud.gateway.filter.ratelimit.KeyResolver;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
@@ -12,7 +13,10 @@ import reactor.core.scheduler.Schedulers;
 /**
  * Clave de rate limit (ADR-0010): {@code jwt:<sub>} si hay Bearer válido;
  * si no {@code ip:<cliente>}. Login/register siguen usando solo IP.
+ * RequestRateLimiter inyecta un {@link KeyResolver}: con dos beans hace falta
+ * {@link Primary} (login sigue usando {@code @remoteAddressKeyResolver} por nombre).
  */
+@Primary
 @Component
 public class JwtOrIpKeyResolver implements KeyResolver {
 
