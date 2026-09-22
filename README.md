@@ -4,6 +4,17 @@ Aplicación de comercio electrónico construida como un monorepo Maven con
 microservicios independientes. El proyecto permite gestionar usuarios,
 catálogo, pedidos, pagos y notificaciones mediante APIs REST.
 
+**Versión de demostración:** `1.2.0` (imágenes
+`ghcr.io/ale96glz/microservices-ecommerce/<servicio>:1.2.0`).
+
+Entorno **interno** (Compose o Kubernetes local): secretos, Flyway, Redis con
+password, rate limit por IP y JWT `sub`, backup de Postgres a PVC y restore
+ensayado. **No** es un go-live público (sin Let's Encrypt, SASL de Kafka ni HA).
+Detalle en [`docs/produccion.md`](./docs/produccion.md).
+
+En **laboratorio** (Compose / H2) hay Swagger y secretos de demo. En Kubernetes
+el profile `prod` cierra Swagger, H2 y CORS abierto.
+
 ## Estado actual
 
 ### Servicios
@@ -52,6 +63,8 @@ catálogo, pedidos, pagos y notificaciones mediante APIs REST.
 - Reintentos con backoff y Dead Letter Topics (DLT) para eventos Kafka fallidos.
 - Health checks compatibles con Kubernetes.
 - Arranque orquestado en Compose: el gateway espera a auth-service y redis sanos (healthchecks) antes de aceptar tráfico (ADR-0015).
+- Kubernetes: profile `prod`, Sealed Secrets, Ingress TLS de lab, Job del primer ADMIN, CronJob de backup Postgres y restore (`scripts/restore-postgres-backup.ps1`).
+- Rate limiting en el gateway: login/register por IP; resto por `sub` JWT (ADR-0010).
 
 ## Arquitectura de eventos
 
@@ -180,7 +193,15 @@ manifiestos:
 
 ```powershell
 .\scripts\deploy-k8s-full.ps1
-.\scripts\deploy-k8s-full.ps1 -ImageVersion 1.1.1
+.\scripts\deploy-k8s-full.ps1 -ImageVersion 1.2.0
+```
+
+Para ensayar un restore desde el PVC de backups (crea `catalogo_db_restore_drill`,
+lista tablas y la borra; no pisa `catalogo_db`):
+
+```powershell
+.\scripts\restore-postgres-backup.ps1
+.\scripts\restore-postgres-backup.ps1 -Database pagos_db
 ```
 
 Actualmente ejecuta:
@@ -326,7 +347,7 @@ imágenes publicadas:
 docker compose pull postgres kafka zipkin redis \
   auth-service catalogo-service pedidos-service pagos-service \
   notificaciones-service api-gateway
-IMAGE_PREFIX=ghcr.io/ale96glz/microservices-ecommerce IMAGE_VERSION=1.1.9 \
+IMAGE_PREFIX=ghcr.io/ale96glz/microservices-ecommerce IMAGE_VERSION=1.2.0 \
   docker compose up -d --no-build postgres kafka zipkin redis \
   auth-service catalogo-service pedidos-service pagos-service \
   notificaciones-service api-gateway
@@ -386,8 +407,9 @@ la decisión en
 - [x] Evitar la exposición directa de los puertos internos (ADR-0007).
 - [x] Configurar HTTPS (ADR-0008, TLS self-signed por Ingress).
 - [x] Gestión segura de secretos (ADR-0009, Kubernetes Sealed Secrets).
-- [x] Agregar rate limiting (ADR-0010, RedisRateLimiter; fail-closed en `prod`).
+- [x] Agregar rate limiting (ADR-0010, RedisRateLimiter por IP y JWT `sub`; fail-closed en `prod`).
 - [x] Incorporar logs estructurados, métricas y trazabilidad.
+- [x] Flyway, backup Postgres a PVC y restore documentado (`scripts/restore-postgres-backup.ps1`).
 
 ### Fase 4 — Calidad
 

@@ -45,9 +45,22 @@ spec:
                   STAMP=$(date -u +%Y%m%dT%H%M%SZ)
                   DEST=/backups/$STAMP
                   mkdir -p "$DEST"
+                  cleanup_incomplete() {
+                    rm -rf "$DEST"
+                  }
+                  trap cleanup_incomplete EXIT
                   for db in auth_db catalogo_db pedidos_db pagos_db notificaciones_db; do
                     pg_dump --format=custom --file="$DEST/$db.dump" "$db"
                     echo "OK $db"
+                  done
+                  trap - EXIT
+                  for d in /backups/*; do
+                    [ -d "$d" ] || continue
+                    n=$(find "$d" -maxdepth 1 -name '*.dump' | wc -l)
+                    if [ "$n" -lt 5 ]; then
+                      echo "Descartando stamp incompleto $(basename "$d") ($n dumps)"
+                      rm -rf "$d"
+                    fi
                   done
                   find /backups -mindepth 1 -maxdepth 1 -type d -mtime +14 -exec rm -rf {} +
                   echo "Backup $STAMP listo"
