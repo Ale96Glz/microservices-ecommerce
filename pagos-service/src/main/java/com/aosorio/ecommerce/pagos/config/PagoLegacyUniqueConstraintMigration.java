@@ -11,11 +11,14 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.regex.Pattern;
 
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class PagoLegacyUniqueConstraintMigration implements ApplicationRunner {
+
+    private static final Pattern IDENTIFICADOR_POSTGRES = Pattern.compile("^[A-Za-z_][A-Za-z0-9_]*$");
 
     private final JdbcTemplate jdbcTemplate;
     private final DataSource dataSource;
@@ -51,11 +54,19 @@ public class PagoLegacyUniqueConstraintMigration implements ApplicationRunner {
                         WHERE a.attname <> 'pedido_id')
                 """, String.class);
         for (String nombre : restricciones) {
+            if (!esIdentificadorSeguro(nombre)) {
+                log.warn("Se omite DROP CONSTRAINT: nombre no es un identificador Postgres valido: {}", nombre);
+                continue;
+            }
             jdbcTemplate.execute("ALTER TABLE pago DROP CONSTRAINT IF EXISTS \"" + nombre + "\"");
             log.info("Restriccion unica antigua '{}' de la tabla pago eliminada", nombre);
         }
         if (restricciones.isEmpty()) {
             log.info("No hay restriccion unica antigua de pago que migrar");
         }
+    }
+
+    static boolean esIdentificadorSeguro(String nombre) {
+        return nombre != null && IDENTIFICADOR_POSTGRES.matcher(nombre).matches();
     }
 }
