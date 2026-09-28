@@ -67,7 +67,7 @@ public class KafkaConfig {
             @Value("${kafka.retry.backoff-ms:1000}") long backoffMs
     ) {
         DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(dltKafkaTemplate);
-        return new DefaultErrorHandler(recoverer, new FixedBackOff(backoffMs, maxAttempts - 1));
+        return new DefaultErrorHandler(recoverer, new FixedBackOff(backoffMs, maxAttempts - 1L));
     }
 
     @Bean
