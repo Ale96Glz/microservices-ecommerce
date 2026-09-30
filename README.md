@@ -103,6 +103,14 @@ desarrollo. En Docker Compose se habilita automáticamente.
 
 Maven, los tests y el análisis SonarQube deben ejecutarse con `JAVA_HOME` apuntando a un JDK 21. Con JDK 24 (u otro más nuevo) Mockito puede fallar al crear mocks (MockMaker / ByteBuddy) y aparecer como errores de Surefire, no como fallos de negocio. En Windows, por ejemplo: `echo %JAVA_HOME%` y `java -version` deben mostrar 21 antes de `mvn test` o de lanzar el scanner.
 
+Para publicar cobertura en SonarQube (JaCoCo; no hay umbral de Quality Gate):
+
+```bash
+mvn clean test
+```
+
+Cada módulo genera `target/site/jacoco/jacoco.xml`. Después lanza el scanner que ya uses (`sonar-scanner` o `mvn sonar:sonar`) con el mismo JDK 21. La ruta de los informes está en `sonar-project.properties`.
+
 ## Ejecución local
 
 Para compilar todos los módulos:
