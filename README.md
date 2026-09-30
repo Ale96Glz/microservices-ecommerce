@@ -97,9 +97,11 @@ desarrollo. En Docker Compose se habilita automáticamente.
 
 ## Requisitos
 
-- Java 21
+- **Java 21** (Temurin u otra distribución equivalente). El CI usa 21.
 - Maven 3.9+
 - Docker Desktop (para PostgreSQL, Kafka y el despliegue completo)
+
+Maven, los tests y el análisis SonarQube deben ejecutarse con `JAVA_HOME` apuntando a un JDK 21. Con JDK 24 (u otro más nuevo) Mockito puede fallar al crear mocks (MockMaker / ByteBuddy) y aparecer como errores de Surefire, no como fallos de negocio. En Windows, por ejemplo: `echo %JAVA_HOME%` y `java -version` deben mostrar 21 antes de `mvn test` o de lanzar el scanner.
 
 ## Ejecución local
 
