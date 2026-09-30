@@ -48,19 +48,19 @@ public final class ProductionSecrets {
         }
     }
 
-    static void validatePostgresPassword(String password) {
-        if (password == null || password.isBlank()) {
+    static void validatePostgresPassword(String datasourceSecret) {
+        if (datasourceSecret == null || datasourceSecret.isBlank()) {
             throw new IllegalStateException(
                     "Profile prod: SPRING_DATASOURCE_PASSWORD es obligatorio con PostgreSQL");
         }
-        if (INSECURE_POSTGRES_DEFAULT.equals(password)) {
+        if (INSECURE_POSTGRES_DEFAULT.equals(datasourceSecret)) {
             throw new IllegalStateException(
                     "Profile prod: el password de Postgres no puede ser el default de lab (ecommerce)");
         }
     }
 
-    static void validateRedisPassword(String password) {
-        if (password == null || password.isBlank()) {
+    static void validateRedisPassword(String redisSecret) {
+        if (redisSecret == null || redisSecret.isBlank()) {
             throw new IllegalStateException(
                     "Profile prod: SPRING_DATA_REDIS_PASSWORD es obligatorio");
         }
