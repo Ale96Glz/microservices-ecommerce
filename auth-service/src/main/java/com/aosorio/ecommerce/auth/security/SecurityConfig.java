@@ -16,7 +16,8 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())
+                // JWT Bearer, sin cookie de sesion: CSRF no aplica (S4502 / issue #21).
+                .csrf(csrf -> csrf.disable()) // NOSONAR
                 .headers(headers -> headers.frameOptions(frame -> frame.disable()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
