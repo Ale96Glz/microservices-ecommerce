@@ -43,7 +43,7 @@
         <!-- CVE-2026-22732: el backport 6.3.15 es Enterprise; OSS = 6.5.9 (+ Framework 6.2). -->
         <spring-security.version>6.5.9</spring-security.version>
         <spring.version>6.2.19</spring.version>
-        <jacoco.version>0.8.13</jacoco.version>
+        <jacoco.version>0.8.15</jacoco.version>
         <sonar.coverage.jacoco.xmlReportPaths>**/target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
     </properties>
 
