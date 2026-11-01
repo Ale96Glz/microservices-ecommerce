@@ -4,8 +4,8 @@ Aplicación de comercio electrónico construida como un monorepo Maven con
 microservicios independientes. El proyecto permite gestionar usuarios,
 catálogo, pedidos, pagos y notificaciones mediante APIs REST.
 
-**Versión de demostración:** `1.2.0` (imágenes
-`ghcr.io/ale96glz/microservices-ecommerce/<servicio>:1.2.0`).
+**Versión de demostración:** `1.2.4` (imágenes
+`ghcr.io/ale96glz/microservices-ecommerce/<servicio>:1.2.4`).
 
 Entorno **interno** (Compose o Kubernetes local): secretos, Flyway, Redis con
 password, rate limit por IP y JWT `sub`, backup de Postgres a PVC y restore
@@ -203,7 +203,7 @@ manifiestos:
 
 ```powershell
 .\scripts\deploy-k8s-full.ps1
-.\scripts\deploy-k8s-full.ps1 -ImageVersion 1.2.0
+.\scripts\deploy-k8s-full.ps1 -ImageVersion 1.2.4
 ```
 
 Para ensayar un restore desde el PVC de backups (crea `catalogo_db_restore_drill`,
@@ -357,7 +357,7 @@ imágenes publicadas:
 docker compose pull postgres kafka zipkin redis \
   auth-service catalogo-service pedidos-service pagos-service \
   notificaciones-service api-gateway
-IMAGE_PREFIX=ghcr.io/ale96glz/microservices-ecommerce IMAGE_VERSION=1.2.0 \
+IMAGE_PREFIX=ghcr.io/ale96glz/microservices-ecommerce IMAGE_VERSION=1.2.4 \
   docker compose up -d --no-build postgres kafka zipkin redis \
   auth-service catalogo-service pedidos-service pagos-service \
   notificaciones-service api-gateway
