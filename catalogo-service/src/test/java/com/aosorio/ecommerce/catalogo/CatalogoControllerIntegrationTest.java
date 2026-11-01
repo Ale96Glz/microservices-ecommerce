@@ -324,4 +324,21 @@ class CatalogoControllerIntegrationTest {
                         .content(json(Map.of("nombre", "Juguetes", "descripcion", "Juguetes"))))
                 .andExpect(status().isUnauthorized());
     }
+
+    @Test
+    void crearProductoConPrecioCeroRetorna400ConMessageDeValidacion() throws Exception {
+        mockMvc.perform(post("/api/v1/producto")
+                        .header("Authorization", "Bearer " + token(10L, "USER"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(Map.of(
+                                "nombre", "Laptop",
+                                "descripcion", "Laptop 14 pulgadas",
+                                "precio", 0,
+                                "stock", 5,
+                                "categoriaId", categoria.getId()))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("Bad Request"))
+                .andExpect(jsonPath("$.message").value("precio: El precio debe ser mayor a 0"));
+    }
 }
