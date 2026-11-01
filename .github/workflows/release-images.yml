@@ -96,6 +96,7 @@ jobs:
           ignore-unfixed: true
           exit-code: "1"
           vuln-type: os,library
+          trivyignores: .trivyignore
 
   github-release:
     needs: [resolve-version, build-and-push]

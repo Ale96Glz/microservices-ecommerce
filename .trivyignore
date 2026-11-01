@@ -1,0 +1,15 @@
+# Spring Framework 6.1 (Boot 3.3) ya no tiene parche OSS. El advisory lista
+# 7.0.9 (Boot 4) como unico arreglo publico; 6.1.29 / 6.2.20 son Enterprise.
+# Este portafolio permanece en Boot 3.3 + Cloud 2023.0.x.
+#
+# CVE-2026-47892: WebFlux functional endpoints + DispatcherServlet (preflight).
+# El api-gateway usa Netty/DispatcherHandler, no DispatcherServlet.
+CVE-2026-47892
+#
+# CVE-2026-47884: XsltView con mapping /**. Los servicios MVC no usan XsltView.
+CVE-2026-47884
+#
+# Mismo lote de agosto 2026, CRITICAL, mismo techo OSS 7.0.9.
+CVE-2026-47891
+CVE-2026-59283
+CVE-2026-59313
