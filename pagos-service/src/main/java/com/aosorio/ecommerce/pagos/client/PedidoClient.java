@@ -27,7 +27,7 @@ public class PedidoClient {
                 .build();
     }
 
-    public void validarPagable(Long pedidoId, Long usuarioId) {
+    public PedidoEstadoDTO validarPagable(Long pedidoId, Long usuarioId) {
         PedidoEstadoDTO pedido = restClient.get()
                 .uri("/api/v1/pedido/{id}", pedidoId)
                 .header(USER_ID_HEADER, String.valueOf(usuarioId))
@@ -53,5 +53,6 @@ public class PedidoClient {
                     "El pedido con id " + pedidoId + " no está en estado CREADO (estado actual: "
                             + pedido.estado() + ")");
         }
+        return pedido;
     }
 }

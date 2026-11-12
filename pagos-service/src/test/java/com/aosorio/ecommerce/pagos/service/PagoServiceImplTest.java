@@ -6,6 +6,7 @@ import com.aosorio.ecommerce.pagos.domain.OutboxEvent;
 import com.aosorio.ecommerce.pagos.domain.Pago;
 import com.aosorio.ecommerce.pagos.dto.PagoRequestDTO;
 import com.aosorio.ecommerce.pagos.dto.PagoResponseDTO;
+import com.aosorio.ecommerce.pagos.dto.PedidoEstadoDTO;
 import com.aosorio.ecommerce.pagos.exception.ResourceInUseException;
 import com.aosorio.ecommerce.pagos.exception.ResourceNotFoundException;
 import com.aosorio.ecommerce.pagos.mapper.PagoMapper;
@@ -78,8 +79,14 @@ class PagoServiceImplTest {
         when(pagoRepository.findFirstByPedidoIdOrderByIdDesc(pedidoId)).thenReturn(Optional.empty());
     }
 
+    private void stubPedidoPagable(Long pedidoId, Long usuarioId, String total) {
+        when(pedidoClient.validarPagable(pedidoId, usuarioId))
+                .thenReturn(new PedidoEstadoDTO(pedidoId, usuarioId, new BigDecimal(total), "CREADO"));
+    }
+
     @Test
     void procesarPagoBajoElLimiteQuedaProcesadoYPublicaEvento() {
+        stubPedidoPagable(5L, 9L, "100.00");
         stubPedidoSinPagoPrevio(5L);
         when(pagoRepository.save(any(Pago.class)))
                 .thenReturn(pago(1L, 5L, 9L, new BigDecimal("100.00"), "PROCESADO", 1));
@@ -106,6 +113,7 @@ class PagoServiceImplTest {
 
     @Test
     void procesarPagoSobreElLimiteSeRechazaConMotivo() {
+        stubPedidoPagable(5L, 9L, "9999.00");
         stubPedidoSinPagoPrevio(5L);
         when(pagoRepository.save(any(Pago.class)))
                 .thenReturn(pago(1L, 5L, 9L, new BigDecimal("9999.00"), "RECHAZADO", 1));
@@ -130,6 +138,7 @@ class PagoServiceImplTest {
 
     @Test
     void reintentoTrasRechazoCreaIntentoSiguiente() {
+        stubPedidoPagable(5L, 9L, "120.00");
         when(pagoRepository.existsByPedidoIdAndEstado(5L, Pago.EstadoPago.PROCESADO)).thenReturn(false);
         when(pagoRepository.findFirstByPedidoIdOrderByIdDesc(5L)).thenReturn(
                 Optional.of(pago(1L, 5L, 9L, new BigDecimal("9999.00"), "RECHAZADO", 1)));
@@ -146,7 +155,21 @@ class PagoServiceImplTest {
     }
 
     @Test
+    void procesarRechazaMontoDistintoAlTotalDelPedido() {
+        stubPedidoPagable(5L, 9L, "30.00");
+
+        assertThatThrownBy(() -> pagoService.procesar(9L,
+                PagoRequestDTO.builder().pedidoId(5L).monto(new BigDecimal("31.0")).build()))
+                .isInstanceOf(ResourceInUseException.class)
+                .hasMessageContaining("no coincide con el total");
+
+        verify(pagoRepository, never()).save(any());
+        verify(outboxEventRepository, never()).save(any());
+    }
+
+    @Test
     void procesarPagoDePedidoYaPagadoLanzaResourceInUse() {
+        stubPedidoPagable(5L, 9L, "100.00");
         when(pagoRepository.existsByPedidoIdAndEstado(5L, Pago.EstadoPago.PROCESADO)).thenReturn(true);
 
         assertThatThrownBy(() -> pagoService.procesar(9L,
