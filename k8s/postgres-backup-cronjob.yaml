@@ -42,6 +42,14 @@ spec:
                 - -c
                 - |
                   set -euo pipefail
+                  # Si el cluster despierta tarde, el CronJob puede ejecutarse antes
+                  # de que Postgres acepte conexiones; esperar evita el fallo rapido.
+                  for i in $(seq 1 60); do
+                    pg_isready -h "$PGHOST" -U "$PGUSER" >/dev/null 2>&1 && break
+                    if [ "$i" -eq 60 ]; then echo "Postgres no disponible tras 2 min"; exit 1; fi
+                    echo "Esperando a Postgres en $PGHOST..."
+                    sleep 2
+                  done
                   STAMP=$(date -u +%Y%m%dT%H%M%SZ)
                   DEST=/backups/$STAMP
                   mkdir -p "$DEST"
