@@ -4,8 +4,8 @@ Aplicación de comercio electrónico construida como un monorepo Maven con
 microservicios independientes. El proyecto permite gestionar usuarios,
 catálogo, pedidos, pagos y notificaciones mediante APIs REST.
 
-**Versión de demostración:** `1.2.4` (imágenes
-`ghcr.io/ale96glz/microservices-ecommerce/<servicio>:1.2.4`).
+**Versión de demostración:** `1.2.5` (imágenes
+`ghcr.io/ale96glz/microservices-ecommerce/<servicio>:1.2.5`).
 
 Entorno **interno** (Compose o Kubernetes local): secretos, Flyway, Redis con
 password, rate limit por IP y JWT `sub`, backup de Postgres a PVC y restore
@@ -57,6 +57,8 @@ el profile `prod` cierra Swagger, H2 y CORS abierto.
   cancelar o rechazar.
 - Reintento de pago rechazado (ADR-0016): intentos por pedido + reactivación
   explícita del pedido cancelado, con re-reserva atómica de stock.
+- El `POST /api/v1/pago` exige que `monto` sea igual al total del pedido; si no,
+  responde `422` sin crear pago y sin mover el pedido (ADR-0020).
 - Transactional Outbox: los eventos (OrderCreated, PaymentProcessed,
   RestockRequested) se guardan en una tabla interna en la misma transacción del
   dato de negocio y un publicador los envía a Kafka.
@@ -203,7 +205,7 @@ manifiestos:
 
 ```powershell
 .\scripts\deploy-k8s-full.ps1
-.\scripts\deploy-k8s-full.ps1 -ImageVersion 1.2.4
+.\scripts\deploy-k8s-full.ps1 -ImageVersion 1.2.5
 ```
 
 Para ensayar un restore desde el PVC de backups (crea `catalogo_db_restore_drill`,
@@ -357,7 +359,7 @@ imágenes publicadas:
 docker compose pull postgres kafka zipkin redis \
   auth-service catalogo-service pedidos-service pagos-service \
   notificaciones-service api-gateway
-IMAGE_PREFIX=ghcr.io/ale96glz/microservices-ecommerce IMAGE_VERSION=1.2.4 \
+IMAGE_PREFIX=ghcr.io/ale96glz/microservices-ecommerce IMAGE_VERSION=1.2.5 \
   docker compose up -d --no-build postgres kafka zipkin redis \
   auth-service catalogo-service pedidos-service pagos-service \
   notificaciones-service api-gateway

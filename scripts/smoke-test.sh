@@ -14,7 +14,9 @@ set -euo pipefail
 # (outbox RESTOCK_REQUIRED) restaura el stock en catalogo.
 # Y valida el reintento de pago (ADR-0016): reactivar -> re-reserva stock ->
 # subir el umbral aprobado en runtime (tabla configuracion) -> nuevo pago
-# PROCESADO (intento 2) -> pedido PAGADO sin re-publicar order-created.
+# PROCESADO (intento 2) -> pedido PAGADO sin re-publicar order-created. Antes del
+# reintento comprueba el invariante monto = total (ADR-0020): un monto distinto
+# responde 422 sin crear pago y sin mover el pedido.
 #
 # Pre-requisitos:
 #   - Stack arriba con las imagenes publicadas:
@@ -278,6 +280,17 @@ stock_reactivado() {
 }
 wait_until "stock re-reservado a $STOCK_TRAS_CANCELACION" 60 stock_reactivado
 echo "  stock re-reservado a $STOCK_TRAS_CANCELACION"
+
+# El monto debe coincidir con el total del pedido (ADR-0020): un monto distinto
+# responde 422, no crea pago y el pedido sigue CREADO.
+MONTO_INCORRECTO=$(jq -n --argjson t "$TOTAL_RECHAZADO" '$t + 1')
+code=$(api POST /api/v1/pago "{\"pedidoId\":$PEDIDO_RECHAZADO_ID,\"monto\":$MONTO_INCORRECTO}" "$TOKEN")
+expect 422 "$code"
+code=$(api GET "/api/v1/pedido/$PEDIDO_RECHAZADO_ID" "" "$TOKEN")
+expect 200 "$code"
+[ "$(jq -r '.estado' "$BODY_TMP")" = "CREADO" ] \
+  || fail "el pedido debe seguir CREADO tras un monto distinto al total"
+echo "  monto incorrecto ($MONTO_INCORRECTO vs $TOTAL_RECHAZADO) rechazado con 422 (pedido sigue CREADO)"
 
 # El umbral de aprobacion se lee en cada pago (tabla configuracion); se sube en
 # runtime para que el reintento (mismo monto 120.00) salga PROCESADO.

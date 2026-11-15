@@ -7,6 +7,7 @@ import com.aosorio.ecommerce.pagos.domain.Pago;
 import com.aosorio.ecommerce.pagos.dto.PagoRequestDTO;
 import com.aosorio.ecommerce.pagos.dto.PagoResponseDTO;
 import com.aosorio.ecommerce.pagos.dto.PedidoEstadoDTO;
+import com.aosorio.ecommerce.pagos.exception.MontoNoCoincideException;
 import com.aosorio.ecommerce.pagos.exception.ResourceInUseException;
 import com.aosorio.ecommerce.pagos.exception.ResourceNotFoundException;
 import com.aosorio.ecommerce.pagos.mapper.PagoMapper;
@@ -160,7 +161,7 @@ class PagoServiceImplTest {
 
         assertThatThrownBy(() -> pagoService.procesar(9L,
                 PagoRequestDTO.builder().pedidoId(5L).monto(new BigDecimal("31.0")).build()))
-                .isInstanceOf(ResourceInUseException.class)
+                .isInstanceOf(MontoNoCoincideException.class)
                 .hasMessageContaining("no coincide con el total");
 
         verify(pagoRepository, never()).save(any());

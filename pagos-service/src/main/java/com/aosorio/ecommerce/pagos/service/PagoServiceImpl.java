@@ -9,6 +9,7 @@ import com.aosorio.ecommerce.pagos.dto.PageResponseDTO;
 import com.aosorio.ecommerce.pagos.dto.PagoRequestDTO;
 import com.aosorio.ecommerce.pagos.dto.PagoResponseDTO;
 import com.aosorio.ecommerce.pagos.dto.PedidoEstadoDTO;
+import com.aosorio.ecommerce.pagos.exception.MontoNoCoincideException;
 import com.aosorio.ecommerce.pagos.exception.ResourceInUseException;
 import com.aosorio.ecommerce.pagos.exception.ResourceNotFoundException;
 import com.aosorio.ecommerce.pagos.mapper.PagoMapper;
@@ -43,8 +44,8 @@ public class PagoServiceImpl implements PagoService {
     public PagoResponseDTO procesar(Long usuarioId, PagoRequestDTO request) {
         PedidoEstadoDTO pedido = pedidoClient.validarPagable(request.getPedidoId(), usuarioId);
         if (pedido.total() == null || request.getMonto().compareTo(pedido.total()) != 0) {
-            throw new ResourceInUseException(
-                    "El monto no coincide con el total del pedido");
+            throw new MontoNoCoincideException("El monto " + request.getMonto()
+                    + " no coincide con el total del pedido " + pedido.total());
         }
         return guardarPago(request.getPedidoId(), usuarioId, request.getMonto());
     }

@@ -24,6 +24,7 @@ Michael Nygard (Contexto → Decisión → Consecuencias).
 | [ADR-0017](./adr/ADR-0017-flyway-migraciones.md) | Migraciones versionadas con Flyway | Aceptado |
 | [ADR-0018](./adr/ADR-0018-topicos-kafka-declarados.md) | Tópicos Kafka declarados antes de los consumidores | Aceptado |
 | [ADR-0019](./adr/ADR-0019-outbox-ack-kafka.md) | Outbox marca PUBLICADO solo con ack de Kafka | Aceptado |
+| [ADR-0020](./adr/ADR-0020-monto-pago-igual-total-pedido.md) | El monto del pago debe coincidir con el total del pedido (422) | Aceptado |
 
 ## Guías operativas
 

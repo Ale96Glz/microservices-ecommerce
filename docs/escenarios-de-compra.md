@@ -117,6 +117,9 @@ curl -s $BASE/api/v1/pago/pedido/1 -H "Authorization: Bearer $TOKEN"
   "motivoRechazo": null, "intento": 1, "fechaProcesado": "..." }
 ```
 
+> El `monto` enviado a `POST /api/v1/pago` debe coincidir con el total del pedido;
+> si no, responde `422` sin crear pago y el pedido sigue `CREADO` (ADR-0020).
+
 Se publica `payment-processed`; al consumirlo, `pedidos-service` mueve el pedido
 a `PAGADO` y `notificaciones-service` genera:
 `El pago #1 del pedido #1 quedó en estado PROCESADO. Monto: 90.0`.
@@ -220,6 +223,7 @@ cancelación (follow-up abierto).
 | Acción | Código | Motivo |
 |---|---|---|
 | `POST /pago` para un pedido ya pagado/rechazado | `409` | unicidad `pedido_id`; **sin reintento aún** (ADR-0014, follow-up) |
+| `POST /pago` con `monto` distinto al total del pedido | `422` | invariante `monto = total` (ADR-0020); el pago no se persiste y el pedido sigue `CREADO` |
 | Llamadas sin `Authorization` | `401` | JWT requerido (gateway) |
 | `POST /producto` con rol `USER` | `403` | operación de `ADMIN` |
 | Más de N peticiones por usuario (JWT `sub`) o por IP sin token | `429` | rate limiting Redis (ADR-0010); reintenta |
@@ -233,7 +237,7 @@ cancelación (follow-up abierto).
   `scripts/smoke-test.sh`) contra las imágenes publicadas en GHCR.
 - **ADR-0012** — CI y smoke; **ADR-0013** — compensación por saga+outbox;
   **ADR-0014** — contrato 201 y `motivoRechazo`; **ADR-0015** — arranque
-  ordenado de gateway.
+  ordenado de gateway; **ADR-0020** — `monto` = total del pedido (`422`).
 - Los escenarios 3 y 4 documentan el comportamiento existente y los límites
   conocidos (cancelación post-pago y reintento de pago quedan como follow-ups
   en la hoja de ruta).
